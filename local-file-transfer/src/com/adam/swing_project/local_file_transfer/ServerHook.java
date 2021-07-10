@@ -85,7 +85,7 @@ public class ServerHook {
                                 } else if("RECEIVE".equals(command)) {
                                     updateServerTransferConsole("发送文件中...");
                                     String fileName = "637262112909361979.jpg";
-                                    FileInputStream fileInputStream= new FileInputStream(new File(".\\local-file-transfer\\src\\com.adam.swing_project.local_file_transfer\\637262112909361979.jpg"));
+                                    FileInputStream fileInputStream= new FileInputStream(new File(".\\local-file-transfer\\src\\com\\adam\\swing_project\\local_file_transfer\\637262112909361979.jpg"));
                                     byte[] bytes = fileName.getBytes();
                                     outputStream.write(bytes);
                                     int leftBlank = 256-bytes.length;
