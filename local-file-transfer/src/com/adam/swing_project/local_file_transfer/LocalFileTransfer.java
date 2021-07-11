@@ -50,9 +50,12 @@ public class LocalFileTransfer {
         clientPortField.setPreferredSize(new Dimension(50, 20));
         clientInputBox.add(clientPortField);
         JButton clientConnectButton = new JButton("测试连接")
-                , clientReceiveButton = new JButton("接收文件");
+                , clientReceiveButton = new JButton("接收文件")
+                , clientDirectoryButton = new JButton("修改接收目录");
         clientBox.add(Box.createVerticalStrut(10));
-        JLabel clientConsole = new JLabel("Console", JLabel.CENTER);
+        JLabel clientConsole = new JLabel("Console", JLabel.CENTER)
+                , clientDirectoryLabel = new JLabel("接收路径：")
+                , clientDirectory = new JLabel(System.getProperty("user.home"));
         Box clientConsoleBox = Box.createHorizontalBox();
         clientConsoleBox.add(clientConsole);
         clientBox.add(clientConsoleBox);
@@ -61,8 +64,19 @@ public class LocalFileTransfer {
         clientBox.add(clientButtonBox);
         clientButtonBox.add(clientConnectButton);
         clientButtonBox.add(clientReceiveButton);
+        clientButtonBox.add(clientDirectoryButton);
         clientConnectButton.addActionListener(e -> clientHook.checkAndTest());
         clientReceiveButton.addActionListener(e -> clientHook.checkAndReceive());
+        clientDirectoryButton.addActionListener(e -> clientHook.changeDirectory());
+        Box clientDirectoryConsoleBox = Box.createHorizontalBox();
+        clientDirectoryConsoleBox.add(clientDirectoryLabel);
+        clientDirectoryConsoleBox.add(Box.createHorizontalStrut(20));
+        clientDirectoryConsoleBox.add(clientDirectory);
+        clientBox.add(clientDirectoryConsoleBox);
+        JFileChooser clientDirectoryChooser = new JFileChooser();
+        clientDirectoryChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        clientDirectoryChooser.setApproveButtonText("确定");
+        clientDirectoryChooser.setDialogTitle("选择本地文件");
 
         JPanel serverPanel = new JPanel();
         entranceButton2.addActionListener(e -> {
@@ -105,9 +119,15 @@ public class LocalFileTransfer {
         serverBox.add(serverTransferButtonBox);
         JButton serverChooseFileButton = new JButton("选择本地文件")
                 , serverTransferButton = new JButton("发送");
+        serverChooseFileButton.setEnabled(false);
         serverTransferButton.setEnabled(false);
         serverTransferButtonBox.add(serverChooseFileButton);
         serverTransferButtonBox.add(serverTransferButton);
+        serverChooseFileButton.addActionListener(e -> serverHook.chooseFile());
+        serverTransferButton.addActionListener(e -> serverHook.sendFile());
+        JFileChooser serverFileChooser = new JFileChooser();
+        serverFileChooser.setApproveButtonText("确定");
+        serverFileChooser.setDialogTitle("选择本地文件");
 
         contentPane.add("entrance", entrancePanel);
         contentPane.add("client", clientPanel);
@@ -127,11 +147,19 @@ public class LocalFileTransfer {
         serverHook.setServerFileName(serverFileName);
         serverHook.setServerStartupButton(serverStartupButton);
         serverHook.setServerStopButton(serverStopButton);
+        serverHook.setServerFileChooser(serverFileChooser);
+        serverHook.setServerTransferButton(serverTransferButton);
+        serverHook.setServerChooseFileButton(serverChooseFileButton);
         clientHook = new ClientHook();
         clientHook.setClientPanel(clientPanel);
         clientHook.setClientIpField(clientIpField);
         clientHook.setClientPortField(clientPortField);
         clientHook.setClientConsole(clientConsole);
+        clientHook.setClientConnectButton(clientConnectButton);
+        clientHook.setClientReceiveButton(clientReceiveButton);
+        clientHook.setClientDirectory(clientDirectory);
+        clientHook.setClientDirectoryButton(clientDirectoryButton);
+        clientHook.setClientDirectoryChooser(clientDirectoryChooser);
     }
 
 }
