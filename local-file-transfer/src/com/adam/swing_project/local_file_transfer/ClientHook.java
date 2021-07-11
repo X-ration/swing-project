@@ -17,7 +17,7 @@ public class ClientHook {
     @HookCompleteCheck(HookCompleteCheck.CHECK_CONSTANT.REQUIRED)
     private JFileChooser clientDirectoryChooser;
     private HookCompleteChecker hookCompleteChecker;
-    private String iClientDirectory = System.getProperty("user.home");
+    private String iClientDirectory = System.getProperty("user.home") + File.separator + "LFT";
 
     public ClientHook() {
         this.hookCompleteChecker = new HookCompleteChecker(this);

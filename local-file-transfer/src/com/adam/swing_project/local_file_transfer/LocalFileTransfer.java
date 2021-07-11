@@ -2,6 +2,7 @@ package com.adam.swing_project.local_file_transfer;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 /**
  * 局域网文件传输
@@ -55,7 +56,7 @@ public class LocalFileTransfer {
         clientBox.add(Box.createVerticalStrut(10));
         JLabel clientConsole = new JLabel("Console", JLabel.CENTER)
                 , clientDirectoryLabel = new JLabel("接收路径：")
-                , clientDirectory = new JLabel(System.getProperty("user.home"));
+                , clientDirectory = new JLabel(System.getProperty("user.home") + File.separator + "LFT");
         Box clientConsoleBox = Box.createHorizontalBox();
         clientConsoleBox.add(clientConsole);
         clientBox.add(clientConsoleBox);

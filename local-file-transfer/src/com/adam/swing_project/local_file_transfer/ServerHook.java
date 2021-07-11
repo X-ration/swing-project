@@ -150,7 +150,7 @@ public class ServerHook {
                                     }
                                     byte[] byteBuffer = new byte[1024];
                                     while((len = fileInputStream.read(byteBuffer))!=-1) {
-                                        outputStream.write(byteBuffer);
+                                        outputStream.write(byteBuffer, 0, len);
                                     }
                                     updateServerTransferConsole("文件成功发送到"+clientAddressText);
                                     updateServerStartupConsole("已启动在"+localPort+"端口");
