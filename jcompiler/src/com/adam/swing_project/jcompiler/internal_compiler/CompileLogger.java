@@ -1,4 +1,4 @@
-package com.adam.swing_project.jcompiler;
+package com.adam.swing_project.jcompiler.internal_compiler;
 
 import com.adam.swing_project.jcompiler.assertion.Assert;
 

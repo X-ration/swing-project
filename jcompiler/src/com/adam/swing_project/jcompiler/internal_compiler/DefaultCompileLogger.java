@@ -1,4 +1,4 @@
-package com.adam.swing_project.jcompiler;
+package com.adam.swing_project.jcompiler.internal_compiler;
 
 import com.adam.swing_project.jcompiler.assertion.Assert;
 
@@ -16,7 +16,7 @@ public class DefaultCompileLogger extends CompileLogger{
     protected String convertToLog(File file) {
         String projectPath = projectDir.getPath();
         String currentFilePath = file.getPath();
-        String text = "Compiling " + currentFilePath.substring(projectPath.length());
+        String text = ("Compiling " + currentFilePath.substring(projectPath.length() + 1));
         return text;
     }
 }

@@ -1,8 +1,12 @@
 package com.adam.swing_project.jcompiler;
 
-import com.adam.swing_project.jcompiler.ajswing.AJAutoScrollPane;
 import com.adam.swing_project.jcompiler.ajswing.AJFileChooserButton;
 import com.adam.swing_project.jcompiler.ajswing.AJLabel;
+import com.adam.swing_project.jcompiler.ajswing.AJScrollPane;
+import com.adam.swing_project.jcompiler.internal_compiler.CompileEvent;
+import com.adam.swing_project.jcompiler.internal_compiler.CompileEventType;
+import com.adam.swing_project.jcompiler.internal_compiler.CompileListener;
+import com.adam.swing_project.jcompiler.internal_compiler.InternalCompiler;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,41 +46,53 @@ public class JCompiler {
         baseBox.add(Box.createVerticalStrut(20));
         Box compileConsoleBox = Box.createHorizontalBox();
         JTextArea compileConsole = new JTextArea();
-        AJAutoScrollPane compileConsolePane = new AJAutoScrollPane(compileConsole, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        compileConsoleBox.add(compileConsolePane);
         compileConsole.setEditable(false);
+        compileConsole.setVisible(false);
         compileConsole.setLineWrap(true);
         compileConsole.setColumns(50);
         compileConsole.setRows(5);
+        compileConsole.setFont(new Font("Tahoma", Font.ITALIC, 10));
+        AJScrollPane compileConsolePane = new AJScrollPane(compileConsole, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        compileConsoleBox.add(compileConsolePane);
         compileConsolePane.setWheelScrollingEnabled(true);
         compileConsolePane.setVerticalAutoScroll();
         baseBox.add(compileConsoleBox);
         internalCompiler.addCompileLoggerListener(compileLog -> {
-            compileConsole.append(compileLog);
-            compileConsole.append(System.lineSeparator());
-//            compileConsole.paintImmediately(compileConsole.getBounds());
-            //todo 实时滚动还有点问题
-            compileConsolePane.paintImmediately(compileConsolePane.getBounds());
+            SwingUtilities.invokeLater(()->{
+                compileConsole.append(compileLog);
+                compileConsole.append(System.lineSeparator());
+            });
+        });
+        internalCompiler.addCompileListener(new CompileListener() {
+            @Override
+            public void onEvent(CompileEvent compileEvent) {
+                compileButton.setEnabled(false);
+            }
+            @Override
+            public boolean filterEvent(CompileEvent compileEvent) {
+                return compileEvent.getType() == CompileEventType.STARTED;
+            }
+        });
+        internalCompiler.addCompileListener(new CompileListener() {
+            @Override
+            public void onEvent(CompileEvent compileEvent) {
+                compileButton.setEnabled(true);
+            }
 
-//            compileConsolePane.revalidate();
-//            compileConsolePane.getViewport().addChangeListener(e -> System.out.println(e));
-//            System.out.println(compileConsole.getBounds());
-//            compileConsolePane.getViewport().setView(compileConsole);
-//            compileConsolePane.getViewport().setScrollMode(JViewport.BLIT_SCROLL_MODE);
+            @Override
+            public boolean filterEvent(CompileEvent compileEvent) {
+                return compileEvent.getType() == CompileEventType.FINISHED;
+            }
         });
         compileButton.addActionListener(e -> {
             compileConsole.setVisible(true);
             internalCompiler.setSrcDir(projectDirButton.getFileChosen());
             internalCompiler.setCompileDir(outputDirButton.getFileChosen());
-            //test
-            internalCompiler.setSrcDir(new File("D:\\Users\\Adam\\Documents\\Coding\\swing-project\\jcompiler\\src"));
-            internalCompiler.setCompileDir(new File("D:\\Users\\Adam\\Documents\\Coding\\swing-project\\compile\\jcompiler"));
             internalCompiler.compile();
         });
 
-
         contentPane.add(baseBox);
-        Dimension minDimension = new Dimension(600, 400);
+        Dimension minDimension = new Dimension(600, 350);
         jFrame.setMinimumSize(minDimension);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jFrame.setVisible(true);

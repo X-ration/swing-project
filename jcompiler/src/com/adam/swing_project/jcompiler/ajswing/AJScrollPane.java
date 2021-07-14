@@ -10,13 +10,13 @@ import java.awt.*;
 /**
  * 实现自动滚动的ScrollPane组件
  */
-public class AJAutoScrollPane extends JScrollPane {
+public class AJScrollPane extends JScrollPane {
 
-    public AJAutoScrollPane(Component component) {
+    public AJScrollPane(Component component) {
         super(component);
     }
 
-    public AJAutoScrollPane(Component component, int vsbPolicy, int hsbPolicy) {
+    public AJScrollPane(Component component, int vsbPolicy, int hsbPolicy) {
         super(component, vsbPolicy, hsbPolicy);
     }
 

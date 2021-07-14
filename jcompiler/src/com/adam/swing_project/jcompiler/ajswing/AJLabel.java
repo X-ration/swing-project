@@ -12,6 +12,11 @@ public class AJLabel extends JLabel {
         this.defaultText = defaultText;
     }
 
+    public AJLabel(String defaultText, int horizontalAlignment) {
+        super(defaultText, horizontalAlignment);
+        this.defaultText = defaultText;
+    }
+
     @Override
     public void setText(String text) {
         if(text == null || text.trim().equals("")) {

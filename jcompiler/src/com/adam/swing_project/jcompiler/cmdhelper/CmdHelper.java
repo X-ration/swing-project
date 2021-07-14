@@ -6,6 +6,7 @@ import com.adam.swing_project.jcompiler.iohelper.IOHelperException;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.Iterator;
 
 /**
@@ -16,7 +17,7 @@ public class CmdHelper {
     private Process cmdProcess;
     private BufferedReader stdOutReader, stdErrReader;
     private BufferedWriter stdInWriter;
-    private String charset, bound;
+    private String charset, bound, cmdName;
     private boolean isStarted;
     private CmdHelperLogger cmdHelperLogger;
     private CharIOHelper charIOHelper;
@@ -31,16 +32,17 @@ public class CmdHelper {
     }
 
     public CmdHelper() {
-        this(null, null, new DefaultCmdHelperLogger(), null);
+        this(null, null, null, new DefaultCmdHelperLogger(), null);
     }
 
     public CmdHelper(CmdHelperLogger cmdHelperLogger) {
-        this(null, null, cmdHelperLogger, null);
+        this(null, null, null, cmdHelperLogger, null);
     }
 
-    public CmdHelper(String charset, String bound, CmdHelperLogger cmdHelperLogger, CharIOHelper charIOHelper) {
+    public CmdHelper(String charset, String bound, String cmdName, CmdHelperLogger cmdHelperLogger, CharIOHelper charIOHelper) {
         this.charset = getCharsetOrDefault(charset);
         this.bound = getBoundOrDefault(bound);
+        this.cmdName = getCmdNameOrDefault(cmdName);
         this.cmdHelperLogger = cmdHelperLogger;
         this.charIOHelper = charIOHelper;
         this.lastCommandLen = 0;
@@ -79,7 +81,8 @@ public class CmdHelper {
     public void startup() {
         if(!isStarted) {
             try {
-                this.cmdProcess = Runtime.getRuntime().exec("cmd");
+                System.out.print(System.lineSeparator() + "CmdHelper started at " + new Date() + System.lineSeparator());
+                this.cmdProcess = Runtime.getRuntime().exec(cmdName);
                 this.stdOutReader = new BufferedReader(new InputStreamReader(cmdProcess.getInputStream(), this.charset));
                 this.stdErrReader = new BufferedReader(new InputStreamReader(cmdProcess.getErrorStream(), this.charset));
                 this.stdInWriter = new BufferedWriter(new OutputStreamWriter(cmdProcess.getOutputStream(), this.charset));
@@ -112,6 +115,7 @@ public class CmdHelper {
             this.cmdProcess.destroy();
             isStarted = false;
             reset();
+            System.out.print(System.lineSeparator() + "CmdHelper terminated at " + new Date() + System.lineSeparator());
         }
     }
 
@@ -201,6 +205,22 @@ public class CmdHelper {
                 }
             }
             return bound;
+        }
+    }
+
+    private String getCmdNameOrDefault(String cmdName) {
+        if(cmdName != null) {
+            return cmdName;
+        } else {
+            String osName = System.getProperty("os.name");
+            if(osName != null) {
+                if(osName.startsWith("Windows")) {
+                    cmdName = "cmd";
+                } else if(osName.startsWith("Linux")) {
+                    cmdName = "bash";
+                }
+            }
+            return cmdName;
         }
     }
 
