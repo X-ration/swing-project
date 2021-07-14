@@ -1,4 +1,4 @@
-package com.adam.swing_project.jcompiler;
+package com.adam.swing_project.jcompiler.ajswing;
 
 import com.adam.swing_project.jcompiler.assertion.Assert;
 
@@ -59,5 +59,11 @@ public class AJFileChooserButton extends JButton {
         for(AJFileChosenListener listener: fileChosenListeners) {
             listener.fileChosen(file);
         }
+    }
+
+    public void setCurrentDirectory(File file) {
+        Assert.notNull(file);
+        Assert.isTrue(file.isDirectory(), IllegalArgumentException.class, "param 'file' is not a directory");
+        this.jFileChooser.setCurrentDirectory(file);
     }
 }

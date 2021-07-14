@@ -18,26 +18,30 @@ public class CmdHelper {
     private BufferedWriter stdInWriter;
     private String charset, bound;
     private boolean isStarted;
-    private Logger logger;
+    private CmdHelperLogger cmdHelperLogger;
     private CharIOHelper charIOHelper;
 
     private int lastCommandLen;
 
     public static void main(String[] args) {
-        CmdHelper cmdHelper = new CmdHelper();
+        CmdHelper cmdHelper = new CmdHelper(new FakeCmdHelperLogger());
         cmdHelper.startup();
         cmdHelper.exec("dir");
         cmdHelper.stop();
     }
 
     public CmdHelper() {
-        this(null, null, new DefaultLogger(), null);
+        this(null, null, new DefaultCmdHelperLogger(), null);
     }
 
-    public CmdHelper(String charset, String bound, Logger logger, CharIOHelper charIOHelper) {
+    public CmdHelper(CmdHelperLogger cmdHelperLogger) {
+        this(null, null, cmdHelperLogger, null);
+    }
+
+    public CmdHelper(String charset, String bound, CmdHelperLogger cmdHelperLogger, CharIOHelper charIOHelper) {
         this.charset = getCharsetOrDefault(charset);
         this.bound = getBoundOrDefault(bound);
-        this.logger = logger;
+        this.cmdHelperLogger = cmdHelperLogger;
         this.charIOHelper = charIOHelper;
         this.lastCommandLen = 0;
     }
@@ -138,21 +142,21 @@ public class CmdHelper {
                 printString = printString.substring(lastCommandLen + 2);
                 lastCommandLen = 0;
             }
-//            logger.logStdOut(printString);
+            cmdHelperLogger.logStdOut(printString);
 
         }
 
         while((bufString = charIOHelper.readStdErr()) != null) {
-//            logger.logStdErr(bufString);
+            cmdHelperLogger.logStdErr(bufString);
         }
 
         if(!cmdProcess.isAlive()) {
-//            logger.logStdErr("process is dead");
+            cmdHelperLogger.logStdErr("process is dead");
             stop();
             throw new CmdHelperException("Cmd process is dead");
         }
 
-//        logger.logStdOut(lastLine);
+        cmdHelperLogger.logStdOut(lastLine);
     }
 
     public void writeStdIn(String text) throws IOHelperException {
@@ -160,7 +164,7 @@ public class CmdHelper {
         if(text.length() > 0) {
             this.lastCommandLen = text.length();
             String command = text + System.lineSeparator();
-//            logger.logStdIn(command);
+            cmdHelperLogger.logStdIn(command);
             charIOHelper.writeStdIn(command);
         }
     }

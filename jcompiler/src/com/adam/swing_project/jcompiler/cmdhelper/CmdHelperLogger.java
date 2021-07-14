@@ -3,7 +3,7 @@ package com.adam.swing_project.jcompiler.cmdhelper;
 /**
  * 通用Logger接口
  */
-public interface Logger {
+public interface CmdHelperLogger {
 
     /**
      * 标准输出

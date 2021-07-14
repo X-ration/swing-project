@@ -1,6 +1,6 @@
 package com.adam.swing_project.jcompiler.cmdhelper;
 
-public class DefaultLogger implements Logger{
+public class DefaultCmdHelperLogger implements CmdHelperLogger {
     @Override
     public void logStdOut(String logMsg) {
         System.out.print(logMsg);

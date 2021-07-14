@@ -1,4 +1,4 @@
-package com.adam.swing_project.jcompiler;
+package com.adam.swing_project.jcompiler.ajswing;
 
 import java.io.File;
 

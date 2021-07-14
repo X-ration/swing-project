@@ -1,7 +1,12 @@
 package com.adam.swing_project.jcompiler;
 
+import com.adam.swing_project.jcompiler.ajswing.AJAutoScrollPane;
+import com.adam.swing_project.jcompiler.ajswing.AJFileChooserButton;
+import com.adam.swing_project.jcompiler.ajswing.AJLabel;
+
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class JCompiler {
     public static void main(String[] args) {
@@ -28,6 +33,7 @@ public class JCompiler {
         AJFileChooserButton outputDirButton = new AJFileChooserButton("选择编译路径", JFileChooser.DIRECTORIES_ONLY);
         baseBox.add(outputDirButton);
         outputDirButton.addFileChosenListener(file -> outputDir.setText(file.getPath()));
+        projectDirButton.addFileChosenListener(outputDirButton::setCurrentDirectory);
 
         baseBox.add(Box.createVerticalStrut(20));
         JButton compileButton = new JButton("编译");
@@ -36,29 +42,35 @@ public class JCompiler {
         baseBox.add(Box.createVerticalStrut(20));
         Box compileConsoleBox = Box.createHorizontalBox();
         JTextArea compileConsole = new JTextArea();
-        JScrollPane compileConsolePane = new JScrollPane(compileConsole);
+        AJAutoScrollPane compileConsolePane = new AJAutoScrollPane(compileConsole, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         compileConsoleBox.add(compileConsolePane);
         compileConsole.setEditable(false);
         compileConsole.setLineWrap(true);
         compileConsole.setColumns(50);
-        compileConsolePane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        compileConsole.setRows(5);
         compileConsolePane.setWheelScrollingEnabled(true);
+        compileConsolePane.setVerticalAutoScroll();
         baseBox.add(compileConsoleBox);
         internalCompiler.addCompileLoggerListener(compileLog -> {
-//            compileConsole.append(compileLog);
-//            compileConsole.append(System.lineSeparator());
-            compileConsole.insert(System.lineSeparator(),0);
-            compileConsole.insert(compileLog,0);
-            JScrollBar compileConsoleScrollBar = compileConsolePane.getVerticalScrollBar();
-            compileConsole.paintImmediately(compileConsole.getBounds());
+            compileConsole.append(compileLog);
+            compileConsole.append(System.lineSeparator());
+//            compileConsole.paintImmediately(compileConsole.getBounds());
             //todo 实时滚动还有点问题
-//            compileConsoleScrollBar.setValue(compileConsoleScrollBar.getMaximum());
-//            compileConsoleScrollBar.paintImmediately(compileConsoleScrollBar.getBounds());
+            compileConsolePane.paintImmediately(compileConsolePane.getBounds());
+
+//            compileConsolePane.revalidate();
+//            compileConsolePane.getViewport().addChangeListener(e -> System.out.println(e));
+//            System.out.println(compileConsole.getBounds());
+//            compileConsolePane.getViewport().setView(compileConsole);
+//            compileConsolePane.getViewport().setScrollMode(JViewport.BLIT_SCROLL_MODE);
         });
         compileButton.addActionListener(e -> {
             compileConsole.setVisible(true);
             internalCompiler.setSrcDir(projectDirButton.getFileChosen());
             internalCompiler.setCompileDir(outputDirButton.getFileChosen());
+            //test
+            internalCompiler.setSrcDir(new File("D:\\Users\\Adam\\Documents\\Coding\\swing-project\\jcompiler\\src"));
+            internalCompiler.setCompileDir(new File("D:\\Users\\Adam\\Documents\\Coding\\swing-project\\compile\\jcompiler"));
             internalCompiler.compile();
         });
 
