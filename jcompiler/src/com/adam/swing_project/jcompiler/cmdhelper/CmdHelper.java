@@ -25,7 +25,7 @@ public class CmdHelper {
     private int lastCommandLen;
 
     public static void main(String[] args) {
-        CmdHelper cmdHelper = new CmdHelper(new FakeCmdHelperLogger());
+        CmdHelper cmdHelper = new CmdHelper(new DefaultCmdHelperLogger());
         cmdHelper.startup();
         cmdHelper.exec("dir");
         cmdHelper.stop();
