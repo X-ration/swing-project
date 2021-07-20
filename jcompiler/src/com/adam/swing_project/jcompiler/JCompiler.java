@@ -10,7 +10,9 @@ import com.adam.swing_project.jcompiler.internal_compiler.InternalCompiler;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class JCompiler {
     public static void main(String[] args) {
@@ -51,7 +53,15 @@ public class JCompiler {
         compileConsole.setLineWrap(true);
         compileConsole.setColumns(50);
         compileConsole.setRows(5);
-        compileConsole.setFont(new Font("Tahoma", Font.ITALIC, 10));
+        try {
+            FileInputStream fontFileInputStream = new FileInputStream("HarmonyOS_Sans_SC_Regular.ttf");
+            Font font = Font.createFont(Font.TRUETYPE_FONT, fontFileInputStream);
+            compileConsole.setFont(font.deriveFont(Font.ITALIC, 10f));
+        } catch (FontFormatException | IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("font load failed");
+        }
+//        compileConsole.setFont(new Font("Tahoma", Font.ITALIC, 10));
         AJScrollPane compileConsolePane = new AJScrollPane(compileConsole, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         compileConsoleBox.add(compileConsolePane);
         compileConsolePane.setWheelScrollingEnabled(true);
