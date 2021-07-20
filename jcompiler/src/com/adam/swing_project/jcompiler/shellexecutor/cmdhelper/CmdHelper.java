@@ -1,4 +1,4 @@
-package com.adam.swing_project.jcompiler.cmdhelper;
+package com.adam.swing_project.jcompiler.shellexecutor.cmdhelper;
 
 import com.adam.swing_project.jcompiler.assertion.Assert;
 import com.adam.swing_project.jcompiler.iohelper.CharIOHelper;

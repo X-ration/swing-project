@@ -1,7 +1,7 @@
 package com.adam.swing_project.jcompiler.internal_compiler;
 
 import com.adam.swing_project.jcompiler.assertion.Assert;
-import com.adam.swing_project.jcompiler.cmdhelper.CmdHelper;
+import com.adam.swing_project.jcompiler.shellexecutor.cmdhelper.CmdHelper;
 
 import java.io.*;
 import java.util.ArrayList;
