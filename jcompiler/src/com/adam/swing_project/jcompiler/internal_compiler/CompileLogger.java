@@ -36,6 +36,10 @@ public abstract class CompileLogger {
         triggerListeners(log);
     }
 
+    public void logCompileWithLineSeparator(String log) {
+        triggerListeners(log + System.lineSeparator());
+    }
+
     private void triggerListeners(String log) {
         for(CompileLoggerListener listener: compileLoggerListeners) {
             listener.logCompile(log);

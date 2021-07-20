@@ -15,7 +15,7 @@ public class CmdShellExecutor extends ShellExecutor {
     }
 
     @Override
-    protected List<String> convertCommands(List<CommandInput> commandInputs) {
+    protected <T> List<String> convertCommands(List<CommandInput<T>> commandInputs) {
         List<String> commandStrings = new ArrayList<>();
         commandStrings.add("@echo off");  //关闭回显
         for(CommandInput commandInput: commandInputs) {
@@ -27,13 +27,13 @@ public class CmdShellExecutor extends ShellExecutor {
 
     public static void main(String[] args) {
         CmdShellExecutor cmdShellExecutor = new CmdShellExecutor();
-        List<CommandInput> commandInputs = Arrays.asList(
-                new CommandInput("pwd", "pwd"),
-                new CommandInput("ls tmp", "ls tmp"),
-                new CommandInput("whoami", "whoami"),
-                new CommandInput("javac Main.java", "javac")
+        List<CommandInput<Void>> commandInputs = Arrays.asList(
+                new CommandInput<>("pwd", "pwd"),
+                new CommandInput<>("ls tmp", "ls tmp"),
+                new CommandInput<>("whoami", "whoami"),
+                new CommandInput<>("javac Main.java", "javac")
         );
-        List<CommandInput> realInputs = new ArrayList<>(commandInputs);
+        List<CommandInput<Void>> realInputs = new ArrayList<>(commandInputs);
         for(int i=0;i<5;i++) {
             realInputs.addAll(commandInputs);
         }

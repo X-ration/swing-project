@@ -7,6 +7,6 @@ import java.util.List;
  */
 public interface SyncShellExecutor {
 
-    List<CommandOutput> exec(List<CommandInput> commandInputs);
+    <T> List<CommandOutput> exec(List<CommandInput<T>> commandInputs);
 
 }

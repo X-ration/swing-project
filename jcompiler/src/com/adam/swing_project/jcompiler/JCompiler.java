@@ -60,7 +60,6 @@ public class JCompiler {
         internalCompiler.addCompileLoggerListener(compileLog -> {
             SwingUtilities.invokeLater(()->{
                 compileConsole.append(compileLog);
-                compileConsole.append(System.lineSeparator());
             });
         });
         internalCompiler.addCompileListener(new CompileListener() {

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * 命令行执行器父类
@@ -28,13 +29,23 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
         this.charset = charset;
         this.identifierPrefix = identifierPrefix;
         this.processName = (processName == null) ? "ShellExecutor" : processName;
-        String osName = System.getProperty("os.name");
-        if(osName.startsWith("Windows")) {
+        if(this instanceof CmdShellExecutor) {
             this.scriptPath = "tmp" + File.separator + "command.bat";
             this.scriptCommandArgs = new String[]{this.scriptPath};
-        } else if(osName.startsWith("Linux")) {
+        } else if(this instanceof BashShellExecutor) {
             this.scriptPath = "tmp" + File.separator + "command.sh";
             this.scriptCommandArgs = new String[]{"bash",this.scriptPath};
+        } else {
+            throw new ShellExecutorException("unknown type");
+        }
+    }
+
+    public static ShellExecutor systemShellExecutor() {
+        String osName = System.getProperty("os.name");
+        if(osName.startsWith("Windows")) {
+            return new CmdShellExecutor();
+        } else if(osName.startsWith("Linux")) {
+            return new BashShellExecutor();
         } else {
             throw new ShellExecutorException("unknown system");
         }
@@ -43,12 +54,12 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
     protected ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     @Override
-    public void submitAsync(List<CommandInput> inputList, int batchSize) {
+    public <T> void submitAsync(List<CommandInput<T>> inputList, int batchSize) {
         submitInternal(inputList, batchSize, false);
     }
 
     @Override
-    public List<CommandOutput> exec(List<CommandInput> commandInputs) {
+    public <T> List<CommandOutput> exec(List<CommandInput<T>> commandInputs) {
         submitInternal(commandInputs, commandInputs.size(), true);
         List<CommandOutput> commandOutputs = new ArrayList<>();
         while(!finished()) {
@@ -57,7 +68,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
         return commandOutputs;
     }
 
-    private void submitInternal(List<CommandInput> inputList, int batchSize, boolean isSync) {
+    private <T> void submitInternal(List<CommandInput<T>> inputList, int batchSize, boolean isSync) {
         Assert.notNull(inputList);
         Assert.isTrue(inputList.size()>0, "CommandInput list must not empty");
         Assert.isTrue(batchSize > 0, "batchSize must >0");
@@ -77,7 +88,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
             }
 
             reset();
-            this.commandInputs = inputList;
+            this.commandInputs = inputList.stream().map(tCommandInput -> (CommandInput)tCommandInput).collect(Collectors.toList());
             this.commandOutputs = new ArrayList<>();
             this.batchSize = batchSize;
 
@@ -229,7 +240,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
      * @param commandInputs
      * @return
      */
-    protected List<String> convertCommands(List<CommandInput> commandInputs) {
+    protected <T> List<String> convertCommands(List<CommandInput<T>> commandInputs) {
         List<String> converted = new ArrayList<>();
         for(CommandInput commandInput: commandInputs) {
             converted.add("echo '" + identifierPrefix + " " + commandInput.getIdentifier() + "'");
@@ -238,7 +249,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
         return converted;
     }
 
-    private void writeScriptToFile(File file, List<CommandInput> commandInputs) throws IOException {
+    private <T> void writeScriptToFile(File file, List<CommandInput<T>> commandInputs) throws IOException {
         FileWriter fileWriter = new FileWriter(file);
         List<String> lines = convertCommands(commandInputs);
         for(String line: lines) {

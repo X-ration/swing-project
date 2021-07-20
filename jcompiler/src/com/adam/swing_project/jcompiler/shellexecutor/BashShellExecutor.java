@@ -14,14 +14,14 @@ public class BashShellExecutor extends ShellExecutor {
     }
 
     public static void main(String[] args) {
-        BashShellExecutor bashCommandExecutor = new BashShellExecutor();
-        List<CommandInput> commandInputs = Arrays.asList(
+        ShellExecutor bashCommandExecutor = ShellExecutor.systemShellExecutor();
+        List<CommandInput<Void>> commandInputs = Arrays.asList(
                 new CommandInput("pwd", "pwd"),
                 new CommandInput("ls tmp", "ls tmp"),
                 new CommandInput("whoami", "whoami"),
                 new CommandInput("sleep 1s", "sleep")
         );
-        List<CommandInput> realInputs = new ArrayList<>(commandInputs);
+        List<CommandInput<Void>> realInputs = new ArrayList<>(commandInputs);
         for(int i=0;i<5;i++) {
             realInputs.addAll(commandInputs);
         }

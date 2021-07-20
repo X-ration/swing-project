@@ -7,11 +7,11 @@ import java.util.List;
  */
 public interface AsyncShellExecutor {
 
-    default void submitAsync(List<CommandInput> inputList) {
+    default <T> void submitAsync(List<CommandInput<T>> inputList) {
         submitAsync(inputList, 1);
     }
 
-    void submitAsync(List<CommandInput> inputList, int batchSize);
+    <T> void submitAsync(List<CommandInput<T>> inputList, int batchSize);
 
     List<CommandOutput> getResults();
 
