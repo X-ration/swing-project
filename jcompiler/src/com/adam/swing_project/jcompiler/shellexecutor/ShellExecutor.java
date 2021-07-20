@@ -22,6 +22,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
     private List<CommandOutput> commandOutputs;
     private String scriptPath = "tmp/command.bat";
     private File scriptFile = null;
+    private String[] scriptCommandArgs;
 
     public ShellExecutor(String charset, String identifierPrefix, String processName) {
         this.charset = charset;
@@ -30,8 +31,10 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
         String osName = System.getProperty("os.name");
         if(osName.startsWith("Windows")) {
             this.scriptPath = "tmp" + File.separator + "command.bat";
+            this.scriptCommandArgs = new String[]{this.scriptPath};
         } else if(osName.startsWith("Linux")) {
             this.scriptPath = "tmp" + File.separator + "command.sh";
+            this.scriptCommandArgs = new String[]{"bash",this.scriptPath};
         } else {
             throw new ShellExecutorException("unknown system");
         }
@@ -81,18 +84,18 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
             this.terminated = false;
 
             if(isSync) {
-                new ShellTask(this, true).run();
+                new ShellExecutorTask(this, true).run();
             } else {
-                executorService.submit(new ShellTask(this, false));
+                executorService.submit(new ShellExecutorTask(this, false));
             }
         }
     }
 
-    private class ShellTask implements Runnable {
+    private class ShellExecutorTask implements Runnable {
         private ShellExecutor shellExecutor;
         private boolean isSync;
         private CommandOutput lastOutput;
-        private ShellTask(ShellExecutor shellExecutor, boolean isSync) {
+        private ShellExecutorTask(ShellExecutor shellExecutor, boolean isSync) {
             this.shellExecutor = shellExecutor;
             this.isSync = isSync;
         }
@@ -106,7 +109,7 @@ public abstract class ShellExecutor implements  AsyncShellExecutor, SyncShellExe
                         .redirectOutput(ProcessBuilder.Redirect.PIPE)
                         .redirectError(ProcessBuilder.Redirect.PIPE)
                         .redirectErrorStream(true)
-                        .command(shellExecutor.scriptPath)
+                        .command(shellExecutor.scriptCommandArgs)
                         .start();
                 System.out.println("["+Thread.currentThread().getName()+"]" + processName + " started with pid " + cmdProcess.pid());
                 bufferedReader = new BufferedReader(new InputStreamReader(cmdProcess.getInputStream(), charset));
