@@ -10,9 +10,7 @@ import com.adam.swing_project.jcompiler.internal_compiler.InternalCompiler;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 
 public class JCompiler {
     public static void main(String[] args) {
@@ -54,8 +52,10 @@ public class JCompiler {
         compileConsole.setColumns(50);
         compileConsole.setRows(5);
         try {
-            FileInputStream fontFileInputStream = new FileInputStream("HarmonyOS_Sans_SC_Regular.ttf");
-            Font font = Font.createFont(Font.TRUETYPE_FONT, fontFileInputStream);
+            //由于字体会打包到jar中，通过getResourceAsStream获取InputStream。
+            // "/"开头绝对路径表示从顶级目录下定位，而字体正好在顶级目录下
+            InputStream fontInputStream = JCompiler.class.getResourceAsStream("/HarmonyOS_Sans_SC_Regular.ttf");
+            Font font = Font.createFont(Font.TRUETYPE_FONT, fontInputStream);
             compileConsole.setFont(font.deriveFont(Font.ITALIC, 10f));
         } catch (FontFormatException | IOException e) {
             e.printStackTrace();
