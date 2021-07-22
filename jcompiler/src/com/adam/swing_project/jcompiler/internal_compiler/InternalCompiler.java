@@ -17,9 +17,7 @@ public class InternalCompiler {
     private ShellExecutor shellExecutor;
     private DefaultCompileLogger compileLogger = new DefaultCompileLogger();
     private List<CompileListener> compileListeners;
-    private static final String COMPILE_COMMAND = "javac -sourcepath \"%s\" -d \"%s\" -encoding utf-8 \"%s\""
-            , XCOPY_COMMAND = "xcopy /FYS \"%s\" \"%s\""
-            , JAR_COMMAND = "jar --create --file \"%s\" --manifest \"%s\" -C \"%s\" .";
+
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public InternalCompiler() {
@@ -88,7 +86,8 @@ public class InternalCompiler {
 
     private CommandInput<String> collectPackageInput() {
         String releaseJarPath = projectLayout.getReleaseDir().getPath() + File.separator + projectLayout.getReleaseFileName();
-        String command = String.format(JAR_COMMAND, releaseJarPath, projectLayout.getManifestFile().getPath(), projectLayout.getBuildDir().getPath());
+//        String command = String.format(JAR_COMMAND, releaseJarPath, projectLayout.getManifestFile().getPath(), projectLayout.getBuildDir().getPath());
+        String command = ShellCommandGenerator.jarCommand(releaseJarPath, projectLayout.getManifestFile().getPath(), projectLayout.getBuildDir().getPath());
         CommandInput<String> commandInput = new CommandInput<>(command, command, "packaging into " + releaseJarPath);
         return commandInput;
     }
@@ -97,7 +96,8 @@ public class InternalCompiler {
         List<CommandInput<String>> resourceInputs = new ArrayList<>();
         for(File dir: projectLayout.getResources()) {
             if(dir.exists() && dir.isDirectory()) {
-                String command = String.format(XCOPY_COMMAND, dir.getPath(), projectLayout.getBuildDir().getPath());
+//                String command = String.format(XCOPY_COMMAND, dir.getPath(), projectLayout.getBuildDir().getPath());
+                String command = ShellCommandGenerator.copyCommand(dir.getPath(), projectLayout.getBuildDir().getPath());
                 String relativePath = dir.getPath().substring(projectLayout.getRootDir().getPath().length() + 1);
                 String msg = "copying resources in " + relativePath + "...";
                 CommandInput<String> commandInput = new CommandInput<>(command, command, msg);
@@ -127,7 +127,8 @@ public class InternalCompiler {
                 if(resultList == null) {
                     resultList = new ArrayList<>();
                 }
-                String command = String.format(COMPILE_COMMAND, sourceDir, projectLayout.getBuildDir().getPath(), file.getPath());
+//                String command = String.format(COMPILE_COMMAND, sourceDir, projectLayout.getBuildDir().getPath(), file.getPath());
+                String command = ShellCommandGenerator.compileCommand(sourceDir.getPath(), projectLayout.getBuildDir().getPath(), file.getPath());
                 String relativePath = file.getPath().substring(projectLayout.getRootDir().getPath().length() + 1);
                 String msg = "Compiling " + relativePath + "...";
                 resultList.add(new CommandInput<>(command, command, msg));

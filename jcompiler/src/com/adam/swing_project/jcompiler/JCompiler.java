@@ -111,7 +111,6 @@ public class JCompiler {
         compileButton.addActionListener(e -> {
             compileConsole.setVisible(true);
             internalCompiler.setRootDir(projectDirButton.getFileChosen());
-//            internalCompiler.setCompileDir(outputDirButton.getFileChosen());
             internalCompiler.compile();
         });
         //****注册事件 end****
