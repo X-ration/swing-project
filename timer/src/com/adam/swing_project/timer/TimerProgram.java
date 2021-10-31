@@ -9,7 +9,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -256,11 +256,18 @@ public class TimerProgram extends JFrame{
                 stopButton.setEnabled(false);
                 countingLabel.setText("00:00:00");
                 if(AudioController.getInstance().getSoundFile() == null) {
-                    URL soundFileURL = TimerProgram.class.getResource("/Listen.wav");
+                    InputStream soundInputStream = TimerProgram.class.getResourceAsStream("/Listen.wav");
+                    byte[] buffer = new byte[1024];
                     try {
-                        File soundFile = new File(soundFileURL.toURI());
+                        File soundFile = File.createTempFile("Listen", ".wav");
+                        FileOutputStream fileOutputStream = new FileOutputStream(soundFile);
+                        int n = 0;
+                        while((n = soundInputStream.read(buffer, 0, buffer.length)) != -1) {
+                            fileOutputStream.write(buffer, 0, n);
+                        }
+                        fileOutputStream.close();
                         AudioController.getInstance().chooseSoundFile(soundFile);
-                    } catch (URISyntaxException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
