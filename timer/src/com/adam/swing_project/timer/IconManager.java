@@ -14,6 +14,22 @@ public class IconManager {
         return getByFileNameOriginalSize("icons8-time-limit-24.png");
     }
 
+    public static ImageIcon play24() {
+        return getByFileNameOriginalSize("icons8-play-24.png");
+    }
+
+    public static ImageIcon stop24() {
+        return getByFileNameOriginalSize("icons8-stop-24.png");
+    }
+
+    public static ImageIcon pause24() {
+        return getByFileNameOriginalSize("icons8-pause-24.png");
+    }
+
+    public static ImageIcon noRecord24() {
+        return getByFileNameOriginalSize("icons8-no-record-24.png");
+    }
+
     /**
      * 指定宽度、高度缩放图片
      * @param fileName

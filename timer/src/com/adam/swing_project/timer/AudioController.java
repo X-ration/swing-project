@@ -50,6 +50,7 @@ public class AudioController extends Thread {
      */
     @Override
     public void run() {
+        System.out.println("AudioController started.");
         while(status != AudioControllerStatus.TERMINATING) {
             synchronized (lock) {
                 try {
@@ -79,6 +80,10 @@ public class AudioController extends Thread {
         synchronized (lock) {
             lock.notify();
         }
+    }
+
+    public File getSoundFile() {
+        return soundFile;
     }
 
     /**
