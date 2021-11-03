@@ -30,6 +30,10 @@ public class IconManager {
         return getByFileNameOriginalSize("icons8-no-record-24.png");
     }
 
+    public static ImageIcon edit24() {
+        return getByFileNameOriginalSize("icons8-edit-24.png");
+    }
+
     /**
      * 指定宽度、高度缩放图片
      * @param fileName

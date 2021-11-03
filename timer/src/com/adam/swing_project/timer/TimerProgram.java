@@ -1,7 +1,8 @@
 package com.adam.swing_project.timer;
 
-import com.adam.swing_project.timer.ajswing.AJButton;
+import com.adam.swing_project.timer.ajswing.AJStatusButton;
 import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.timer.newcode.AudioThread;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,8 +11,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 public class TimerProgram extends JFrame{
     private TrayIcon trayIcon;
@@ -171,7 +170,7 @@ public class TimerProgram extends JFrame{
                 , TIMER_MAIN_BUTTON_STATUS_STOP_PLAY = 2;
 //        JButton startPauseButton = new JButton(IconManager.play24()),
 //                stopButton = new JButton(IconManager.stop24());
-        AJButton timerMainButton = new AJButton(3, 0);
+        AJStatusButton timerMainButton = new AJStatusButton(3, 0);
         JButton stopButton = new JButton(IconManager.stop24());
         timerMainButton.setToolTipText("开始/暂停计时");
         stopButton.setToolTipText("停止计时");
@@ -183,16 +182,16 @@ public class TimerProgram extends JFrame{
 //        timerMainButton.addActionListener(e -> {
 //            TimerThread.getInstance().startTimer();
 //        });
-        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_START, ajButton -> {
-            ajButton.setIcon(IconManager.play24());
-            if(ajButton.getCurrentStatus() != ajButton.getLastStatus()) {
-                ajButton.setEnabled(true);
+        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_START, ajStatusButton -> {
+            ajStatusButton.setIcon(IconManager.play24());
+            if(ajStatusButton.getCurrentStatus() != ajStatusButton.getLastStatus()) {
+                ajStatusButton.setEnabled(true);
             }
             }, e -> TimerThread.getInstance().startTimer());
-        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_PAUSE, ajButton ->
-                ajButton.setIcon(IconManager.pause24()), e -> TimerThread.getInstance().pauseTimer());
-        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_STOP_PLAY, ajButton ->
-                ajButton.setIcon(IconManager.noRecord24()), e -> AudioController.getInstance().stopPlay());
+        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_PAUSE, ajStatusButton ->
+                ajStatusButton.setIcon(IconManager.pause24()), e -> TimerThread.getInstance().pauseTimer());
+        timerMainButton.bind(TIMER_MAIN_BUTTON_STATUS_STOP_PLAY, ajStatusButton ->
+                ajStatusButton.setIcon(IconManager.noRecord24()), e -> AudioThread.getInstance().stopPlay());
         stopButton.addActionListener(e -> TimerThread.getInstance().stopTimer());
 
 
@@ -218,7 +217,7 @@ public class TimerProgram extends JFrame{
                         jFrame.setVisible(false);
                         pushMessageToTrayIcon("计时器在后台运行", "可通过系统托盘图标右键-显示主窗口恢复", TrayIcon.MessageType.INFO);
                     } else if (result == JOptionPane.NO_OPTION) {
-                        AudioController.getInstance().terminate();
+                        AudioThread.getInstance().terminate();
                         TimerThread.getInstance().terminate();
                         System.exit(0);
                     } else if (result == JOptionPane.CLOSED_OPTION) {
@@ -255,7 +254,7 @@ public class TimerProgram extends JFrame{
                 timerMainButton.changeStatus(TIMER_MAIN_BUTTON_STATUS_STOP_PLAY);
                 stopButton.setEnabled(false);
                 countingLabel.setText("00:00:00");
-                if(AudioController.getInstance().getSoundFile() == null) {
+                if(AudioThread.getInstance().getSoundFile() == null) {
                     InputStream soundInputStream = TimerProgram.class.getResourceAsStream("/Listen.wav");
                     byte[] buffer = new byte[1024];
                     try {
@@ -266,12 +265,12 @@ public class TimerProgram extends JFrame{
                             fileOutputStream.write(buffer, 0, n);
                         }
                         fileOutputStream.close();
-                        AudioController.getInstance().chooseSoundFile(soundFile);
+                        AudioThread.getInstance().chooseSoundFile(soundFile);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
-                    AudioController.getInstance().startPlay();
+                    AudioThread.getInstance().startPlay();
                 }
                 pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
 
@@ -307,7 +306,7 @@ public class TimerProgram extends JFrame{
                 timerMainButton.setEnabled(true);
             }
         });
-        AudioController.getInstance().registerListener(new AudioController.AudioControllerListener() {
+        AudioThread.getInstance().registerListener(new AudioThread.AudioControllerListener() {
             @Override
             public void playStopped() {
                 timerMainButton.changeStatus(TIMER_MAIN_BUTTON_STATUS_START);
@@ -317,7 +316,7 @@ public class TimerProgram extends JFrame{
             public void playPaused() {
             }
         });
-        AudioController.getInstance().start();
+        AudioThread.getInstance().start();
         TimerThread.getInstance().start();
 
         //托盘

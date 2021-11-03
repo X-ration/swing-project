@@ -11,6 +11,9 @@ public class Assert {
     public static void notNull(Object object, Class<? extends RuntimeException> exceptionClass, String msg) {
         isTrue(object != null, exceptionClass, msg);
     }
+    public static void notNull(Object object, String msg) {
+        isTrue(object != null, msg);
+    }
     public static void isTrue(boolean exp) {
         isTrue(exp, "Expression not true");
     }
