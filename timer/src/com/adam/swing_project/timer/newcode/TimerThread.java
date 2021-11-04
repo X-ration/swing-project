@@ -88,44 +88,42 @@ public class TimerThread extends Thread {
 
                 boolean isInterrupted = false;
                 while (!timerTaskList.isEmpty()) {
+                    debugDumpTaskList();
                     long currentTimeMills = System.currentTimeMillis();
                     logger.log("currentTimeMills=" + currentTimeMills);
-                    for (int i=0;i<timerTaskList.size();i++) {
-                        TimerTask timerTask = timerTaskList.get(i);
-                        MeasurementReport<Long> measurementReport = timerTaskMeasurementReportMap.get(timerTask);
-                        if(measurementReport == null) {
-                            measurementReport = createNewReport();
-                            timerTaskMeasurementReportMap.put(timerTask, measurementReport);
-                        }
-                        long timeMillsToSleep = timerTask.getTargetTimeMills() - currentTimeMills;
-                        logger.log(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
-                        isInterrupted = sleepInternal(timeMillsToSleep);
-                        if (isInterrupted) {
-                            logger.log("线程工作时被中断");
-                            break;
-                        }
-                        logger.log(timerTask + "从休眠中醒来");
-                        currentTimeMills += timeMillsToSleep;
-                        logger.log("currentTimeMills=" + currentTimeMills);
-                        long currentTimeMillsForMeasurement = System.currentTimeMillis();
-                        measurementReport.addMeasurementObject(new MeasurementObject<>(timerTask.getActuralTargetTimeMills() , currentTimeMillsForMeasurement));
-//                        workerThreadPool.submit(()->{
-                        //todo 误差问题
-                            timerTask.action.action();
-                            logger.log(timerTask + "执行了action");
-//                        });
-                        if (!timerTask.isLoopTask || currentTimeMills >= timerTask.targetTimeMills) {
-                            timerTaskList.remove(i--);
-                            logger.logInfo(timerTask + "执行完毕，退出任务队列，总误差=" + (timerTask.targetTimeMills - currentTimeMillsForMeasurement)
-                                    + " " + measurementReport.getBriefDiffReport());
-                        } else {
-                            timerTask.updatingStartTimeMills = currentTimeMills;
-                            timerTask.round++;
-                        }
-                        if(Thread.interrupted()) {
-                            logger.log("检测到中断");
-                            break;
-                        }
+                    TimerTask timerTask = timerTaskList.get(0);
+                    MeasurementReport<Long> measurementReport = timerTaskMeasurementReportMap.get(timerTask);
+                    if(measurementReport == null) {
+                        measurementReport = createNewReport();
+                        timerTaskMeasurementReportMap.put(timerTask, measurementReport);
+                    }
+                    long timeMillsToSleep = timerTask.getTargetTimeMills() - currentTimeMills;
+                    logger.log(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
+                    isInterrupted = sleepInternal(timeMillsToSleep);
+                    if (isInterrupted) {
+                        logger.log("线程工作时被中断");
+                        continue;
+                    }
+                    logger.log(timerTask + "从休眠中醒来");
+                    currentTimeMills += timeMillsToSleep;
+                    logger.log("currentTimeMills=" + currentTimeMills);
+                    long currentTimeMillsForMeasurement = System.currentTimeMillis();
+                    measurementReport.addMeasurementObject(new MeasurementObject<>(timerTask.getActuralTargetTimeMills() , currentTimeMillsForMeasurement));
+                    workerThreadPool.submit(()->{
+                        timerTask.action.action();
+                        logger.log(timerTask + "执行了action");
+                    });
+                    if (!timerTask.isLoopTask || currentTimeMills >= timerTask.targetTimeMills) {
+                        timerTaskList.remove(timerTask);
+                        logger.logInfo(timerTask + "执行完毕，退出任务队列，总误差=" + (timerTask.targetTimeMills - currentTimeMillsForMeasurement)
+                                + " " + measurementReport.getBriefDiffReport());
+                    } else {
+                        timerTask.updatingStartTimeMills = currentTimeMills;
+                        timerTask.round++;
+                        relocateTask(timerTask);
+                    }
+                    if(Thread.interrupted()) {
+                        logger.log("检测到中断");
                     }
                 }
             }
@@ -167,6 +165,28 @@ public class TimerThread extends Thread {
      * @param timerTask
      */
     public void registerTask(TimerTask timerTask) {
+        relocateTask(timerTask);
+        logger.logInfo("注册了计时任务" + timerTask + (timerTask.isLoopTask ? "循环任务至" + timerTask.targetTimeMills : ""));
+        debugDumpTaskList();
+        this.interrupt();
+    }
+
+    public void debugDumpTaskList() {
+        StringBuilder sb = new StringBuilder();
+        for(TimerTask task: timerTaskList) {
+            sb.append("task[").append(task).append("]").append(task.getTargetTimeMills());
+        }
+        logger.logDebug("计时任务表：" + sb);
+    }
+
+    /**
+     * 重新定位一个TimerTask到合适位置
+     * @param timerTask
+     */
+    private void relocateTask(TimerTask timerTask) {
+        if(timerTaskList.contains(timerTask)) {
+            timerTaskList.remove(timerTask);
+        }
         int i=0;
         for(;i<timerTaskList.size();i++) {
             TimerTask taskInQueue = timerTaskList.get(i);
@@ -175,8 +195,6 @@ public class TimerThread extends Thread {
             }
         }
         timerTaskList.add(i, timerTask);
-        logger.logInfo("注册了计时任务" + timerTask + (timerTask.isLoopTask ? "循环任务至" + timerTask.targetTimeMills : ""));
-        this.interrupt();
     }
 
     /**

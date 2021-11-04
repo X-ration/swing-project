@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestTimerThread {
     public static void main(String[] args) {
-        test3();
+        test1();
     }
     private static void test1() {
         TimerThread timerThread = ThreadManager.getInstance().getTimerThread();
@@ -17,10 +17,10 @@ public class TestTimerThread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        TimerThread.TimerTask task1 = timerThread.new TimerTask(1, TimeUnit.SECONDS, () -> System.out.println("AAAAA"));
+        TimerThread.TimerTask task1 = timerThread.new TimerTask(500, TimeUnit.MILLISECONDS, () -> System.out.println("AAAAA"));
         long currentTime = System.currentTimeMillis();
         task1.setLoopTask(true, currentTime + 5000);
-        TimerThread.TimerTask task2 = timerThread.new TimerTask(1, TimeUnit.SECONDS, () -> System.out.println("BBBBB"));
+        TimerThread.TimerTask task2 = timerThread.new TimerTask(1000, TimeUnit.MILLISECONDS, () -> System.out.println("BBBBB"));
         task2.setLoopTask(true, currentTime + 10000);
         timerThread.registerTask(task1);
         timerThread.registerTask(task2);

@@ -29,11 +29,12 @@ public class Logger {
      * 初期使用的方法，DEBUG日志
      * @param msg
      */
+    @Deprecated
     public void log(String msg) {
         log(msg, LogLevel.DEBUG);
     }
     public void logDebug(String msg) {
-        log(msg);
+        log(msg, LogLevel.DEBUG);
     }
     public void logInfo(String msg) {
         log(msg, LogLevel.INFO);
