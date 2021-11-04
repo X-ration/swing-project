@@ -100,6 +100,9 @@ public class TimerThread extends Thread {
                     long timeMillsToSleep = timerTask.getTargetTimeMills() - currentTimeMills;
                     logger.log(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
                     isInterrupted = sleepInternal(timeMillsToSleep);
+                    if(isTerminating) {
+                        break;
+                    }
                     if (isInterrupted) {
                         logger.log("线程工作时被中断");
                         continue;
@@ -124,6 +127,8 @@ public class TimerThread extends Thread {
                     }
                     if(Thread.interrupted()) {
                         logger.log("检测到中断");
+                        if(isTerminating)
+                            break;
                     }
                 }
             }
@@ -138,9 +143,7 @@ public class TimerThread extends Thread {
      */
     public void terminate() {
         this.isTerminating = true;
-        synchronized (workingLock) {
-            workingLock.notify();
-        }
+        this.interrupt();
     }
 
     private MeasurementReport<Long> createNewReport() {

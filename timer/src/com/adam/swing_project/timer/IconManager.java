@@ -1,7 +1,13 @@
 package com.adam.swing_project.timer;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Created by Adam.
@@ -42,9 +48,23 @@ public class IconManager {
      * @return
      */
     private static ImageIcon getByFileNameAndRectangleSize(String fileName, int width, int height) {
-        Image srcImage = Toolkit.getDefaultToolkit().getImage(IconManager.class.getResource("/"+fileName));
-        Image newImage = srcImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-        ImageIcon imageIcon = new ImageIcon(newImage);
+        ImageIcon imageIcon = null;
+        try {
+            /*BufferedImage srcImage = ImageIO.read(IconManager.class.getResourceAsStream("/" + fileName));
+            double newW = width * 1.0 / srcImage.getWidth(), newH = height * 1.0 / srcImage.getHeight();
+            AffineTransformOp affineTransformOp = new AffineTransformOp(AffineTransform.getScaleInstance(newW, newH), null);
+            Image Itemp = affineTransformOp.filter(srcImage, null);
+            imageIcon = new ImageIcon(Itemp);
+            */
+            BufferedImage bufferedImage = ImageIO.read(IconManager.class.getResourceAsStream("/" + fileName))
+                    , newImage = new BufferedImage(width, height, bufferedImage.getType());
+            Graphics graphics = newImage.getGraphics();
+            graphics.drawImage(bufferedImage, 0, 0, width, height, null);
+            graphics.dispose();
+            imageIcon = new ImageIcon(newImage);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return imageIcon;
     }
 
@@ -65,6 +85,11 @@ public class IconManager {
      */
     private static ImageIcon getByFileNameOriginalSize(String fileName) {
         return new ImageIcon(IconManager.class.getResource("/"+fileName));
+    }
+
+    public static void main(String[] args) {
+        ImageIcon imageIcon = edit24();
+        System.out.println(imageIcon);
     }
 
 }

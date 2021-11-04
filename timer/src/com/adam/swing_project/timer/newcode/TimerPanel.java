@@ -2,6 +2,7 @@ package com.adam.swing_project.timer.newcode;
 
 import com.adam.swing_project.timer.FontManager;
 import com.adam.swing_project.timer.IconManager;
+import com.adam.swing_project.timer.TimerStatistic;
 import com.adam.swing_project.timer.ajswing.AJStatusButton;
 import com.adam.swing_project.timer.ajswing.AJStatusButtonBinaryStatus;
 
@@ -85,6 +86,8 @@ public class TimerPanel extends JPanel {
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
                 audioThread.chooseSoundFile("/Listen.wav");
+                int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
+                TimerStatistic.getInstance().recordNaturalCounting(statHour, statMinute);
             }
 
             @Override
@@ -92,6 +95,9 @@ public class TimerPanel extends JPanel {
                 timerMainButton.changeStatus(TimerMainButtonStatus.START);
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute(),
+                        statSecond = timer.getResetTime().getSecond();
+                TimerStatistic.getInstance().recordUserStoppedCounting(statHour, statMinute, statSecond);
             }
 
             @Override
@@ -123,10 +129,17 @@ public class TimerPanel extends JPanel {
                 GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0);
         southPanel.add(editButton, southConstraints);
 
-        setLayout(new BorderLayout());
-        add(infoLabel, BorderLayout.NORTH);
-        add(countingLabel, BorderLayout.CENTER);
-        add(southPanel, BorderLayout.SOUTH);
+        GridBagLayout timerPanelLayout =  new GridBagLayout();
+        setLayout(timerPanelLayout);
+        GridBagConstraints timerPanelConstraints = new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.CENTER,
+                GridBagConstraints.BOTH, new Insets(0,0,0,0), 0, 0);
+        add(infoLabel, timerPanelConstraints);
+        timerPanelConstraints = new GridBagConstraints(0,2,1,1,1,1,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0,0,0,0),0,0);
+        add(countingLabel, timerPanelConstraints);
+        timerPanelConstraints = new GridBagConstraints(0,4,1,1,1,1,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0,0,0,0),0,0);
+        add(southPanel, timerPanelConstraints);
         setBorder(BorderFactory.createEtchedBorder());
     }
 
@@ -137,17 +150,17 @@ public class TimerPanel extends JPanel {
         GridBagLayout gridBagLayout = new GridBagLayout();
         contentPane.setLayout(gridBagLayout);
 
-        GridBagConstraints gridBagConstraints = new GridBagConstraints(0,0,1,1,0,0,
-                GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5,5,5,5), 0, 0);
+        GridBagConstraints gridBagConstraints = new GridBagConstraints(0,0,1,1,1,1,
+                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
         contentPane.add(new TimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(1,0,1,1,0,0,
-                GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5,5,5,5), 0, 0);
+        gridBagConstraints = new GridBagConstraints(1,0,1,1,1,1,
+                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
         contentPane.add(new TimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(0,1,1,1,0,0,
-                GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5,5,5,5), 0, 0);
+        gridBagConstraints = new GridBagConstraints(0,1,1,1,1,1,
+                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
         contentPane.add(new TimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(1,1,1,1,0,0,
-                GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(5,5,5,5), 0, 0);
+        gridBagConstraints = new GridBagConstraints(1,1,1,1,1,1,
+                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
         contentPane.add(new TimerPanel(jFrame), gridBagConstraints);
 
         jFrame.pack();
@@ -162,6 +175,10 @@ public class TimerPanel extends JPanel {
                 FileManager.getInstance().cleanTempFiles();
             }
         });
+    }
+
+    public Timer getTimer() {
+        return timer;
     }
 
     //内部方法
