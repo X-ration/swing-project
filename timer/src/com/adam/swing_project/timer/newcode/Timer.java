@@ -13,8 +13,11 @@ public class Timer {
 
     private final Time resetTime, targetTime, countingTime, startTime;
     private TimerStatus status;
+    private TimerThread.TimerTask timerTask;
     private final List<TimerListener> timerListenerList = new ArrayList<>();
     private TimerThread timerThread;
+    private TimerThread.TimerTask lastPauseTimerTask;
+    private final Logger logger = Logger.createLogger(this);
 
     public enum TimerStatus {
         STOPPED, COUNTING, PAUSED, USER_STOPPED
@@ -38,6 +41,11 @@ public class Timer {
         }
         public int getSecond() {
             return second;
+        }
+        private void setAllField(int hour, int minute, int second) {
+            this.hour = hour;
+            this.minute = minute;
+            this.second = second;
         }
     }
 
@@ -72,20 +80,35 @@ public class Timer {
     public void startTimer() {
         Assert.isTrue(!(resetTime.hour == 0 && resetTime.minute == 0 && resetTime.second == 0), "请先重设时间！");
         requireStatus(TimerStatus.STOPPED, TimerStatus.USER_STOPPED, TimerStatus.PAUSED);
+        if(status == TimerStatus.STOPPED || status == TimerStatus.USER_STOPPED) {
+            this.countingTime.hour = resetTime.hour;
+            this.countingTime.minute = resetTime.minute;
+            this.countingTime.second = resetTime.second;
+            Time startTime = getCurrentTime(), targetTime = getCurrentTimePlus(resetTime.hour, resetTime.minute, resetTime.second);
+            this.startTime.hour = startTime.hour;
+            this.startTime.minute = startTime.minute;
+            this.startTime.second = startTime.second;
+            this.targetTime.hour = targetTime.hour;
+            this.targetTime.minute = targetTime.minute;
+            this.targetTime.second = targetTime.second;
+            this.timerTask = timerThread.new TimerTask(1, TimeUnit.SECONDS, this::count1s);
+            this.timerTask.setLoopTask(true, translateTimeToSeconds(resetTime), TimeUnit.SECONDS);
+            logger.logDebug("Timer停止转开始状态注册任务");
+            this.timerThread.registerTask(timerTask);
+        } else {
+            //恢复暂停前状态，即按照暂停前的时间点执行计时任务
+            logger.logDebug("Timer暂停转开始状态移除任务");
+            this.timerThread.removeTask(timerTask);
+//            long newStartTimeMills = System.currentTimeMillis() / 1000 * 1000 + lastPauseTimerTask.getStartTimeMills() % 1000;
+            long millsPassed = lastPauseTimerTask.getExitTimeMills() - lastPauseTimerTask.getStartTimeMills();
+            long newStartTimeMills = System.currentTimeMillis() - millsPassed % 1000;
+            this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
+            this.timerTask.setLoopTask(true, newStartTimeMills + translateTimeToSeconds(resetTime) * 1000 - millsPassed);
+            logger.logDebug("current="+System.currentTimeMillis()+",target=" + timerTask.getTargetTimeMills());
+            logger.logDebug("Timer暂停转开始状态注册任务");
+            this.timerThread.registerTask(timerTask);
+        }
         this.status = TimerStatus.COUNTING;
-        this.countingTime.hour = resetTime.hour;
-        this.countingTime.minute = resetTime.minute;
-        this.countingTime.second = resetTime.second;
-        Time startTime = getCurrentTime(), targetTime = getCurrentTimePlus(resetTime.hour, resetTime.minute, resetTime.second);
-        this.startTime.hour = startTime.hour;
-        this.startTime.minute = startTime.minute;
-        this.startTime.second = startTime.second;
-        this.targetTime.hour = targetTime.hour;
-        this.targetTime.minute = targetTime.minute;
-        this.targetTime.second = targetTime.second;
-        TimerThread.TimerTask timerTask = timerThread.new TimerTask(1, TimeUnit.SECONDS, this::count1s);
-        timerTask.setLoopTask(true, translateTimeToSeconds(resetTime), TimeUnit.SECONDS);
-        timerThread.registerTask(timerTask);
         timerStarted();
     }
 
@@ -94,6 +117,32 @@ public class Timer {
      */
     public void pauseTimer() {
         requireStatus(TimerStatus.COUNTING);
+        this.status = TimerStatus.PAUSED;
+        logger.logDebug("Timer开始转暂停状态移除任务");
+        timerThread.removeTask(timerTask);
+        lastPauseTimerTask = timerTask;
+        timerTask = timerThread.new TimerTask(timerTask.getExitTimeMills() / 1000 * 1000,
+                1, TimeUnit.SECONDS, ()->{
+            if(targetTime.second < 59) {
+                targetTime.second++;
+            } else if(targetTime.minute < 59) {
+                targetTime.second = 0;
+                targetTime.minute++;
+            } else if(targetTime.hour < 23) {
+                targetTime.second = 0;
+                targetTime.minute = 0;
+                targetTime.hour++;
+            } else {
+                targetTime.second = 0;
+                targetTime.minute = 0;
+                targetTime.hour = 0;
+            }
+            timerUpdated();
+        });
+        timerTask.setLoopTask(true, -1);
+        logger.logDebug("Timer开始转暂停状态注册任务");
+        timerThread.registerTask(timerTask);
+        timerPaused();
     }
 
     /**
@@ -101,6 +150,14 @@ public class Timer {
      */
     public void stopTimer() {
         requireStatus(TimerStatus.COUNTING, TimerStatus.PAUSED);
+        timerThread.removeTask(timerTask);
+        timerTask = null;
+        this.status = TimerStatus.USER_STOPPED;
+        this.startTime.setAllField(0,0,0);
+        this.countingTime.setAllField(0,0,0);
+        this.targetTime.setAllField(0,0,0);
+        logger.logDebug("Timer转停止状态移除任务");
+        timerStoppedByUser();
     }
 
     /**
@@ -183,6 +240,9 @@ public class Timer {
         timerUpdated();
         if(countingTime.second == 0 && countingTime.minute == 0 && countingTime.hour == 0) {
             this.status = TimerStatus.STOPPED;
+            this.startTime.setAllField(0,0,0);
+            this.countingTime.setAllField(0,0,0);
+            this.targetTime.setAllField(0,0,0);
             timerStopped();
         }
     }

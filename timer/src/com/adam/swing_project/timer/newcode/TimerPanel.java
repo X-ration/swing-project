@@ -61,7 +61,7 @@ public class TimerPanel extends JPanel {
         });
         stopButton.setIcon(IconManager.stop24());
         stopButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
-        stopButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> {});
+        stopButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> timer.stopTimer());
         editButton.setIcon(IconManager.edit24());
         editButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> showResetTimeDialog());
         editButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
@@ -82,6 +82,8 @@ public class TimerPanel extends JPanel {
 
             @Override
             public void timerStopped() {
+                syncInfoLabel();
+                syncCountingLabel();
                 timerMainButton.changeStatus(TimerMainButtonStatus.STOP_PLAY);
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
@@ -92,6 +94,8 @@ public class TimerPanel extends JPanel {
 
             @Override
             public void timerStoppedByUser() {
+                syncInfoLabel();
+                syncCountingLabel();
                 timerMainButton.changeStatus(TimerMainButtonStatus.START);
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
@@ -102,6 +106,7 @@ public class TimerPanel extends JPanel {
 
             @Override
             public void timerUpdated() {
+                syncInfoLabel();
                 syncCountingLabel();
             }
 
@@ -144,7 +149,7 @@ public class TimerPanel extends JPanel {
     }
 
     public static void main(String[] args) {
-//        Logger.setGlobalLogLevel(Logger.LogLevel.INFO);
+        Logger.setGlobalLogLevel(Logger.LogLevel.INFO);
         JFrame jFrame = new JFrame();
         Container contentPane = jFrame.getContentPane();
         GridBagLayout gridBagLayout = new GridBagLayout();

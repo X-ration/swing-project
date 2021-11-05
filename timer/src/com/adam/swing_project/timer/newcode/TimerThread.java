@@ -27,6 +27,8 @@ public class TimerThread extends Thread {
         //循环执行的任务
         private boolean isLoopTask;
         private long targetTimeMills, round = 1;
+        //任务结束时的时间戳
+        private long exitTimeMills;
 
         public TimerTask(long startTimeMills, long countTime, TimeUnit timeUnit, TimerTaskAction action) {
             this.startTimeMills = startTimeMills;
@@ -39,6 +41,11 @@ public class TimerThread extends Thread {
             this(System.currentTimeMillis(), countTime, timeUnit, action);
         }
 
+        /**
+         * 设置为循环执行任务
+         * @param loopTask true为循环任务
+         * @param targetTimeMills 目标循环的时间点，-1为永久循环
+         */
         public void setLoopTask(boolean loopTask, long targetTimeMills) {
             this.isLoopTask = loopTask;
             this.targetTimeMills = targetTimeMills;
@@ -51,15 +58,27 @@ public class TimerThread extends Thread {
 
         @Override
         public int compareTo(TimerTask o) {
-            return Long.compare(getTargetTimeMills(), o.getTargetTimeMills());
+            return Long.compare(getNextActionTimeMills(), o.getNextActionTimeMills());
         }
 
-        private long getTargetTimeMills ()  {
+        public long getNextActionTimeMills()  {
             return updatingStartTimeMills + timeUnit.toMillis(countTime);
+        }
+
+        public long getTargetTimeMills() {
+            return targetTimeMills;
         }
 
         private long getActuralTargetTimeMills() {
             return startTimeMills + round * timeUnit.toMillis(countTime);
+        }
+
+        public long getExitTimeMills() {
+            return exitTimeMills;
+        }
+
+        public long getStartTimeMills() {
+            return startTimeMills;
         }
     }
 
@@ -97,7 +116,7 @@ public class TimerThread extends Thread {
                         measurementReport = createNewReport();
                         timerTaskMeasurementReportMap.put(timerTask, measurementReport);
                     }
-                    long timeMillsToSleep = timerTask.getTargetTimeMills() - currentTimeMills;
+                    long timeMillsToSleep = timerTask.getNextActionTimeMills() - currentTimeMills;
                     logger.log(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
                     isInterrupted = sleepInternal(timeMillsToSleep);
                     if(isTerminating) {
@@ -116,8 +135,8 @@ public class TimerThread extends Thread {
                         timerTask.action.action();
                         logger.log(timerTask + "执行了action");
                     });
-                    if (!timerTask.isLoopTask || currentTimeMills >= timerTask.targetTimeMills) {
-                        timerTaskList.remove(timerTask);
+                    if (!timerTask.isLoopTask || (timerTask.targetTimeMills != -1 && currentTimeMills >= timerTask.targetTimeMills)) {
+                        removeTask(timerTask);
                         logger.logInfo(timerTask + "执行完毕，退出任务队列，总误差=" + (timerTask.targetTimeMills - currentTimeMillsForMeasurement)
                                 + " " + measurementReport.getBriefDiffReport());
                     } else {
@@ -177,7 +196,7 @@ public class TimerThread extends Thread {
     public void debugDumpTaskList() {
         StringBuilder sb = new StringBuilder();
         for(TimerTask task: timerTaskList) {
-            sb.append("task[").append(task).append("]").append(task.getTargetTimeMills());
+            sb.append("task[").append(task).append("]").append(task.getNextActionTimeMills());
         }
         logger.logDebug("计时任务表：" + sb);
     }
@@ -212,17 +231,23 @@ public class TimerThread extends Thread {
         this.interrupt();
     }
 
-    /**
-     * 移出一个任务
-     * @param timerTask
-     */
-    public void removeTask(TimerTask timerTask) {
+    private void removeTask(TimerTask timerTask, long exitTimeMills) {
         if(!timerTaskList.contains(timerTask)) {
             logger.logWarning("计时任务" + timerTask + "已经执行完毕了");
             return;
         }
         timerTaskList.remove(timerTask);
+        logger.logInfo("移除了计时任务" + timerTask);
+        timerTask.exitTimeMills = exitTimeMills;
         this.interrupt();
+    }
+
+    /**
+     * 移出一个任务
+     * @param timerTask
+     */
+    public void removeTask(TimerTask timerTask) {
+        removeTask(timerTask, System.currentTimeMillis());
     }
 
     /**
