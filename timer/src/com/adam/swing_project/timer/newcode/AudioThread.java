@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer;
+package com.adam.swing_project.timer.newcode;
 
 import com.adam.swing_project.timer.assertion.Assert;
 import com.adam.swing_project.timer.assertion.AssertException;
@@ -19,12 +19,15 @@ import java.util.Enumeration;
  * 控制音频播放的主类
  * main方法是一个简单的播放器软件实现（支持wav格式）
  */
-public class AudioController extends Thread {
+public class AudioThread extends Thread {
 
-    private static final AudioController instance = new AudioController();
+//    private static final AudioThread instance = ThreadManager.getInstance().getAudioThread();
+    @Deprecated
+    private static final AudioThread instance = null;
     private final Object lock = new Object()
             , playLock = new Object();
     private AudioControllerStatus status = AudioControllerStatus.STOPPED;
+    private final Logger logger = Logger.createLogger(this);
 
     private File soundFile;
     private AudioInputStream audioInputStream;
@@ -50,30 +53,34 @@ public class AudioController extends Thread {
      */
     @Override
     public void run() {
-        System.out.println("AudioController started.");
-        while(status != AudioControllerStatus.TERMINATING) {
-            synchronized (lock) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        logger.logInfo("AudioController started.");
+        try {
+            while (status != AudioControllerStatus.TERMINATING) {
+                synchronized (lock) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (status == AudioControllerStatus.TERMINATING)
+                    break;
+                while (status == AudioControllerStatus.PLAYING) {
+                    playOnce();
+                }
+                synchronized (playLock) {
+                    if (status == AudioControllerStatus.STOPPED) {
+                        playStopped();
+                    } else if (status == AudioControllerStatus.PAUSED) {
+                        playPaused();
+                    }
+                    playLock.notify();
                 }
             }
-            if(status == AudioControllerStatus.TERMINATING)
-                break;
-            while(status == AudioControllerStatus.PLAYING) {
-                playOnce();
-            }
-            synchronized (playLock) {
-                if(status == AudioControllerStatus.STOPPED) {
-                    playStopped();
-                } else if(status == AudioControllerStatus.PAUSED) {
-                    playPaused();
-                }
-                playLock.notify();
-            }
+        } catch (Exception e) {
+            logger.logException(e);
         }
-        System.out.println("AudioController terminated.");
+        logger.logInfo("AudioController terminated.");
     }
 
     private void wakeup() {
@@ -95,6 +102,20 @@ public class AudioController extends Thread {
         this.soundFile = soundFile;
         startPlay();
     }
+
+    /**
+     * 指定音频文件资源路径，并播放，外部调用
+     * @param resourcePath
+     */
+    public void chooseSoundFile(String resourcePath) {
+        Assert.notNull(resourcePath);
+        File soundFile = FileManager.getInstance().readFileForResourcePath(resourcePath);
+        if(soundFile != null && this.soundFile != soundFile) {
+            chooseSoundFile(soundFile);
+        }
+    }
+
+
 
     private void beforePlay() {
         try {
@@ -203,7 +224,7 @@ public class AudioController extends Thread {
         }
     }
 
-    public static AudioController getInstance() {
+    public static AudioThread getInstance() {
         return instance;
     }
 
@@ -212,8 +233,8 @@ public class AudioController extends Thread {
         Container contentPane = jFrame.getContentPane();
         contentPane.setLayout(new GridLayout(3,1));
 
-        AudioController audioController = AudioController.getInstance();
-        audioController.start();
+        AudioThread audioThread = AudioThread.getInstance();
+        audioThread.start();
 
         JRadioButton tone1 = new JRadioButton("Listen.wav")
                 , tone2 = new JRadioButton("Tone.wav")
@@ -247,11 +268,11 @@ public class AudioController extends Thread {
                         break;
                     }
                 }
-                audioController.stopPlay();
-                URL fileURL = AudioController.class.getResource("/" + selected.getText());
+                audioThread.stopPlay();
+                URL fileURL = AudioThread.class.getResource("/" + selected.getText());
                 Assert.notNull(fileURL, AssertException.class, "文件不存在" + selected.getText());
                 File soundFile = new File(fileURL.toURI());
-                audioController.chooseSoundFile(soundFile);
+                audioThread.chooseSoundFile(soundFile);
                 play.setEnabled(false);
                 pause.setEnabled(true);
                 stop.setEnabled(true);
@@ -260,13 +281,13 @@ public class AudioController extends Thread {
             }
         });
         play.addActionListener(e -> {
-            audioController.startPlay();
+            audioThread.startPlay();
             play.setEnabled(false);
             pause.setEnabled(true);
             stop.setEnabled(true);
         });
         pause.addActionListener(e -> {
-            audioController.pausePlay();
+            audioThread.pausePlay();
             pause.setEnabled(false);
             play.setEnabled(true);
         });
@@ -274,10 +295,10 @@ public class AudioController extends Thread {
             stop.setEnabled(false);
             play.setEnabled(true);
             pause.setEnabled(false);
-            audioController.stopPlay();
+            audioThread.stopPlay();
         });
 
-        audioController.registerListener(new AudioControllerListener() {
+        audioThread.registerListener(new AudioControllerListener() {
             @Override
             public void playStopped() {
                 play.setEnabled(true);
@@ -312,7 +333,7 @@ public class AudioController extends Thread {
         jFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                audioController.terminate();
+                audioThread.terminate();
             }
         });
     }
