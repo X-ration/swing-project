@@ -140,8 +140,10 @@ public class Timer {
             long newStartTimeMills = System.currentTimeMillis() - millsPassed % 1000;
             this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
             this.timerTask.setLoopTask(true, newStartTimeMills + translateTimeToSeconds(resetTime) * 1000 - millsPassed);
-            logger.logDebug("current="+System.currentTimeMillis()+",target=" + timerTask.getTargetTimeMills());
-            logger.logDebug("Timer暂停转开始状态注册任务");
+            if(logger.debugEnabled()) {
+                logger.logDebug("current=" + System.currentTimeMillis() + ",target=" + timerTask.getTargetTimeMills());
+                logger.logDebug("Timer暂停转开始状态注册任务");
+            }
             this.timerThread.registerTask(timerTask);
         }
         this.status = TimerStatus.COUNTING;

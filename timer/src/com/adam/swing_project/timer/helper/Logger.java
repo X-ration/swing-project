@@ -29,26 +29,20 @@ public class Logger {
      * 初期使用的方法，DEBUG日志
      * @param msg
      */
-    @Deprecated
-    public void log(String msg) {
-        log(msg, LogLevel.DEBUG);
-    }
     public void logDebug(String msg) {
-        log(msg, LogLevel.DEBUG);
+        logDebug(msg, LogLevel.DEBUG);
     }
     public void logInfo(String msg) {
-        log(msg, LogLevel.INFO);
+        logDebug(msg, LogLevel.INFO);
     }
     public void logWarning(String msg) {
-        log(msg, LogLevel.WARNING);
+        logDebug(msg, LogLevel.WARNING);
     }
     public void logError(String msg) {
-        log(msg, LogLevel.ERROR);
+        logDebug(msg, LogLevel.ERROR);
     }
-    public void log(String msg, LogLevel logLevel) {
-        if(this.logLevel != null && this.logLevel.compareTo(logLevel) > 0) {
-            return;
-        } else if(this.logLevel == null && globalLogLevel != null && globalLogLevel.compareTo(logLevel) > 0) {
+    public void logDebug(String msg, LogLevel logLevel) {
+        if(!levelEnabled(logLevel)) {
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -62,6 +56,24 @@ public class Logger {
         sb.append("[Logger of '").append(object).append("' in thread '").append(Thread.currentThread().getName()).append("'] ")
                         .append(msg);
         System.out.println(sb);
+    }
+
+    private boolean levelEnabled(LogLevel logLevel) {
+        if(this.logLevel != null && this.logLevel.compareTo(logLevel) > 0) {
+            return false;
+        } else if(this.logLevel == null && globalLogLevel != null && globalLogLevel.compareTo(logLevel) > 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * 是否启用DEBUG级别
+     * @return
+     */
+    public boolean debugEnabled() {
+        return levelEnabled(LogLevel.DEBUG);
     }
 
     public void logException(Exception e) {
@@ -86,8 +98,8 @@ public class Logger {
         globalLogLevel = LogLevel.INFO;
         Object object1 = new Object(), object2 = new Object();
         Logger logger1 = Logger.createLogger(object1), logger2 = Logger.createLogger(object2);
-        logger1.log("AAAAA");
-        logger2.log("BBBBB");
+        logger1.logDebug("AAAAA");
+        logger2.logDebug("BBBBB");
         logger1.logInfo("AAAAA");
     }
 

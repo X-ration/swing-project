@@ -3,6 +3,7 @@ package com.adam.swing_project.timer.thread;
 import com.adam.swing_project.timer.helper.Logger;
 import com.adam.swing_project.timer.helper.MeasurementObject;
 import com.adam.swing_project.timer.helper.MeasurementReport;
+import com.adam.swing_project.timer.helper.MergingMeasurementReport;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -102,7 +103,7 @@ public class TimerThread extends Thread {
                     try {
                         workingLock.wait();
                     } catch (InterruptedException e) {
-                        logger.log("线程等待时被中断");
+                        logger.logDebug("线程等待时被中断");
                     }
                 }
                 if (isTerminating) {
@@ -111,9 +112,13 @@ public class TimerThread extends Thread {
 
                 boolean isInterrupted = false;
                 while (!timerTaskList.isEmpty()) {
-                    debugDumpTaskList();
+                    if(logger.debugEnabled()) {
+                        debugDumpTaskList();
+                    }
                     long currentTimeMills = System.currentTimeMillis();
-                    logger.log("currentTimeMills=" + currentTimeMills);
+                    if(logger.debugEnabled()) {
+                        logger.logDebug("currentTimeMills=" + currentTimeMills);
+                    }
                     TimerTask timerTask = timerTaskList.get(0);
                     MeasurementReport<Long> measurementReport = timerTaskMeasurementReportMap.get(timerTask);
                     if(measurementReport == null) {
@@ -121,23 +126,29 @@ public class TimerThread extends Thread {
                         timerTaskMeasurementReportMap.put(timerTask, measurementReport);
                     }
                     long timeMillsToSleep = timerTask.getNextActionTimeMills() - currentTimeMills;
-                    logger.log(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
+                    if(logger.debugEnabled()) {
+                        logger.logDebug(timerTask + "计划休眠" + timeMillsToSleep + "毫秒");
+                    }
                     isInterrupted = sleepInternal(timeMillsToSleep);
                     if(isTerminating) {
                         break;
                     }
                     if (isInterrupted) {
-                        logger.log("线程工作时被中断");
+                        logger.logDebug("线程工作时被中断");
                         continue;
                     }
-                    logger.log(timerTask + "从休眠中醒来");
                     currentTimeMills += timeMillsToSleep;
-                    logger.log("currentTimeMills=" + currentTimeMills);
+                    if(logger.debugEnabled()) {
+                        logger.logDebug(timerTask + "从休眠中醒来");
+                        logger.logDebug("currentTimeMills=" + currentTimeMills);
+                    }
                     long currentTimeMillsForMeasurement = System.currentTimeMillis();
                     measurementReport.addMeasurementObject(new MeasurementObject<>(timerTask.getActuralTargetTimeMills() , currentTimeMillsForMeasurement));
                     workerThreadPool.submit(()->{
                         timerTask.action.action();
-                        logger.log(timerTask + "执行了action");
+                        if(logger.debugEnabled()) {
+                            logger.logDebug(timerTask + "执行了action");
+                        }
                     });
                     if (!timerTask.isLoopTask || (timerTask.targetTimeMills != -1 && currentTimeMills >= timerTask.targetTimeMills)) {
                         removeTask(timerTask);
@@ -149,7 +160,7 @@ public class TimerThread extends Thread {
                         relocateTask(timerTask);
                     }
                     if(Thread.interrupted()) {
-                        logger.log("检测到中断");
+                        logger.logDebug("检测到中断");
                         if(isTerminating)
                             break;
                     }
@@ -170,18 +181,28 @@ public class TimerThread extends Thread {
     }
 
     private MeasurementReport<Long> createNewReport() {
-        return new MeasurementReport<>() {
+        return new MergingMeasurementReport<>() {
+            @Override
+            public Long mergeAvg(Long avg, int avgCount, List<Long> longs) {
+                long summary = avg * avgCount;
+                for (long longV : longs) {
+                    summary += longV;
+                }
+                return summary / (avgCount + longs.size());
+            }
+
             @Override
             public Long computeAvg(List<Long> longs) {
                 long summary = 0;
-                for(long longV: longs) {
-                    summary+=longV;
+                for (long longV : longs) {
+                    summary += longV;
                 }
-                return summary/longs.size();
+                return summary / longs.size();
             }
+
             @Override
-            public Long computeDiff(Long t1, Long t2) {
-                return t1-t2;
+            public Long minus(Long t1, Long t2) {
+                return t1 - t2;
             }
         };
     }
@@ -193,7 +214,9 @@ public class TimerThread extends Thread {
     public void registerTask(TimerTask timerTask) {
         relocateTask(timerTask);
         logger.logInfo("注册了计时任务" + timerTask + (timerTask.isLoopTask ? "循环任务至" + timerTask.targetTimeMills : ""));
-        debugDumpTaskList();
+        if(logger.debugEnabled()) {
+            debugDumpTaskList();
+        }
         this.interrupt();
     }
 

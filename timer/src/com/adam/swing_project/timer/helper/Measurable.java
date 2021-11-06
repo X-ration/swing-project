@@ -7,7 +7,7 @@ import java.util.List;
  */
 public interface Measurable<T>{
 
-    T computeDiff(T t1, T t2);
+    T minus(T t1, T t2);
     T computeAvg(List<T> tList);
 
 }
