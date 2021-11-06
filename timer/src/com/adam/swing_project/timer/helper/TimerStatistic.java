@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer;
+package com.adam.swing_project.timer.helper;
 
 import com.adam.swing_project.timer.assertion.Assert;
 

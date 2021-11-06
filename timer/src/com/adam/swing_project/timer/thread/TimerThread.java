@@ -1,4 +1,8 @@
-package com.adam.swing_project.timer.newcode;
+package com.adam.swing_project.timer.thread;
+
+import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.timer.helper.MeasurementObject;
+import com.adam.swing_project.timer.helper.MeasurementReport;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;

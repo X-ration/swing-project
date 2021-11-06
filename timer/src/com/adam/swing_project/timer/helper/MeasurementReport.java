@@ -1,6 +1,4 @@
-package com.adam.swing_project.timer.newcode;
-
-import com.adam.swing_project.timer.assertion.Assert;
+package com.adam.swing_project.timer.helper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +6,7 @@ import java.util.List;
 /**
  * 观测报告
  */
+ //todo 内存优化
 public abstract class MeasurementReport<T extends Comparable<T>> implements Measurable<T> {
 
     private final List<MeasurementObject<T>> measurementObjectList = new ArrayList<>();

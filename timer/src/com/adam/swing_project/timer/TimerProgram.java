@@ -1,7 +1,11 @@
 package com.adam.swing_project.timer;
 
 import com.adam.swing_project.timer.assertion.Assert;
-import com.adam.swing_project.timer.newcode.*;
+import com.adam.swing_project.timer.component.FileManager;
+import com.adam.swing_project.timer.component.IconManager;
+import com.adam.swing_project.timer.thread.ThreadManager;
+import com.adam.swing_project.timer.frontend.TimerPanel;
+import com.adam.swing_project.timer.helper.TimerStatistic;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,7 +13,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.*;
 
 public class TimerProgram extends JFrame{
     private TrayIcon trayIcon;
@@ -54,7 +57,7 @@ public class TimerProgram extends JFrame{
             GridBagConstraints gridBagConstraints = new GridBagConstraints(gridx, gridy, 1, 1, 1, 1,
                     GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(10,10,10,10), 0, 0);
             mainContentPanel.add(timerPanel, gridBagConstraints);
-            timerPanel.getTimer().registerTimerListener(new TimerAdapter() {
+            timerPanel.getTimer().registerTimerListener(timerPanel.getTimer().new TimeAdapter() {
                 @Override
                 public void timerStopped() {
                     pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);

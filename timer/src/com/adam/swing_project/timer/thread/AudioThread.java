@@ -1,7 +1,9 @@
-package com.adam.swing_project.timer.newcode;
+package com.adam.swing_project.timer.thread;
 
 import com.adam.swing_project.timer.assertion.Assert;
 import com.adam.swing_project.timer.assertion.AssertException;
+import com.adam.swing_project.timer.component.FileManager;
+import com.adam.swing_project.timer.helper.Logger;
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -21,9 +23,6 @@ import java.util.Enumeration;
  */
 public class AudioThread extends Thread {
 
-//    private static final AudioThread instance = ThreadManager.getInstance().getAudioThread();
-    @Deprecated
-    private static final AudioThread instance = null;
     private final Object lock = new Object()
             , playLock = new Object();
     private AudioControllerStatus status = AudioControllerStatus.STOPPED;
@@ -46,6 +45,9 @@ public class AudioThread extends Thread {
     public interface AudioControllerListener {
         void playStopped();
         void playPaused();
+    }
+
+    AudioThread() {
     }
 
     /**
@@ -224,16 +226,12 @@ public class AudioThread extends Thread {
         }
     }
 
-    public static AudioThread getInstance() {
-        return instance;
-    }
-
     public static void main(String[] args) {
         JFrame jFrame = new JFrame("播放器测试");
         Container contentPane = jFrame.getContentPane();
         contentPane.setLayout(new GridLayout(3,1));
 
-        AudioThread audioThread = AudioThread.getInstance();
+        AudioThread audioThread = ThreadManager.getInstance().getAudioThread();
         audioThread.start();
 
         JRadioButton tone1 = new JRadioButton("Listen.wav")

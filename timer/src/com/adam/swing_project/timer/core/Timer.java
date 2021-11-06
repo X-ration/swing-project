@@ -1,6 +1,9 @@
-package com.adam.swing_project.timer.newcode;
+package com.adam.swing_project.timer.core;
 
 import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.timer.thread.ThreadManager;
+import com.adam.swing_project.timer.thread.TimerThread;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +59,39 @@ public class Timer {
         void timerStoppedByUser();
         void timerUpdated();
         void timerReset();
+    }
+
+    public class TimeAdapter implements TimerListener {
+
+        @Override
+        public void timerStarted() {
+
+        }
+
+        @Override
+        public void timerPaused() {
+
+        }
+
+        @Override
+        public void timerStopped() {
+
+        }
+
+        @Override
+        public void timerStoppedByUser() {
+
+        }
+
+        @Override
+        public void timerUpdated() {
+
+        }
+
+        @Override
+        public void timerReset() {
+
+        }
     }
 
 
