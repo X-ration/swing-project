@@ -15,6 +15,7 @@ public abstract class MergingMeasurementReport<T extends Comparable<T>>
     //已经合并的数据量
     private int mergedCount;
     private T maxDiff, minDiff, avgDiff;
+    private final Logger logger = Logger.createLogger(this);
 
     @Override
     public void addMeasurementObject(MeasurementObject<T> measurementObject) {
@@ -25,6 +26,7 @@ public abstract class MergingMeasurementReport<T extends Comparable<T>>
     }
 
     private void merge() {
+        logger.logDebug("Merging measurement result");
         List<T> diffList = new ArrayList<>(threshold);
         for(MeasurementObject<T> measurementObject1: super.measurementObjectList) {
             T diff = minus(measurementObject1.getActural(), measurementObject1.getExpected());

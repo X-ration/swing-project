@@ -14,9 +14,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimerThread extends Thread {
     private final Object workingLock = new Object();
-    private final List<TimerTask> timerTaskList = Collections.synchronizedList(new LinkedList<>());
-    private final Map<TimerTask, MeasurementReport<Long>> timerTaskMeasurementReportMap = new HashMap<>();
+//    private final List<TimerTask> timerTaskList = Collections.synchronizedList(new LinkedList<>());
+    private final List<WrappedTimerTask> wrappedTimerTaskList = Collections.synchronizedList(new LinkedList<>());
+//    private final Map<TimerTask, MeasurementReport<Long>> timerTaskMeasurementReportMap = new HashMap<>();
     private boolean isTerminating = false;
+    private boolean isMeasurementEnabled = true;
     private final Logger logger = Logger.createLogger(this);
     private final ThreadPoolExecutor workerThreadPool;
 
@@ -24,6 +26,13 @@ public class TimerThread extends Thread {
         workerThreadPool = threadPoolExecutor;
     }
 
+    private class WrappedTimerTask {
+        TimerTask timerTask;
+        MeasurementReport<Long> measurementReport;
+        WrappedTimerTask(TimerTask timerTask) {
+            this.timerTask = timerTask;
+        }
+    }
     public class TimerTask implements Comparable<TimerTask> {
         private final long startTimeMills;
         private long updatingStartTimeMills, countTime;
@@ -74,7 +83,7 @@ public class TimerThread extends Thread {
             return targetTimeMills;
         }
 
-        private long getActuralTargetTimeMills() {
+        private long getActualNextActionTimeMills() {
             return startTimeMills + round * timeUnit.toMillis(countTime);
         }
 
@@ -111,7 +120,7 @@ public class TimerThread extends Thread {
                 }
 
                 boolean isInterrupted = false;
-                while (!timerTaskList.isEmpty()) {
+                while (!wrappedTimerTaskList.isEmpty()) {
                     if(logger.debugEnabled()) {
                         debugDumpTaskList();
                     }
@@ -119,11 +128,15 @@ public class TimerThread extends Thread {
                     if(logger.debugEnabled()) {
                         logger.logDebug("currentTimeMills=" + currentTimeMills);
                     }
-                    TimerTask timerTask = timerTaskList.get(0);
-                    MeasurementReport<Long> measurementReport = timerTaskMeasurementReportMap.get(timerTask);
-                    if(measurementReport == null) {
-                        measurementReport = createNewReport();
-                        timerTaskMeasurementReportMap.put(timerTask, measurementReport);
+                    WrappedTimerTask wrappedTimerTask = wrappedTimerTaskList.get(0);
+                    TimerTask timerTask = wrappedTimerTask.timerTask;
+                    MeasurementReport<Long> measurementReport = null;
+                    if(isMeasurementEnabled) {
+                        measurementReport = wrappedTimerTask.measurementReport;
+                        if (measurementReport == null) {
+                            measurementReport = createNewReport();
+                            wrappedTimerTask.measurementReport = measurementReport;
+                        }
                     }
                     long timeMillsToSleep = timerTask.getNextActionTimeMills() - currentTimeMills;
                     if(logger.debugEnabled()) {
@@ -142,8 +155,11 @@ public class TimerThread extends Thread {
                         logger.logDebug(timerTask + "从休眠中醒来");
                         logger.logDebug("currentTimeMills=" + currentTimeMills);
                     }
-                    long currentTimeMillsForMeasurement = System.currentTimeMillis();
-                    measurementReport.addMeasurementObject(new MeasurementObject<>(timerTask.getActuralTargetTimeMills() , currentTimeMillsForMeasurement));
+                    long currentTimeMillsForMeasurement = Long.MAX_VALUE;
+                    if(isMeasurementEnabled) {
+                        currentTimeMillsForMeasurement = System.currentTimeMillis();
+                        measurementReport.addMeasurementObject(new MeasurementObject<>(timerTask.getActualNextActionTimeMills(), currentTimeMillsForMeasurement));
+                    }
                     workerThreadPool.submit(()->{
                         timerTask.action.action();
                         if(logger.debugEnabled()) {
@@ -152,8 +168,13 @@ public class TimerThread extends Thread {
                     });
                     if (!timerTask.isLoopTask || (timerTask.targetTimeMills != -1 && currentTimeMills >= timerTask.targetTimeMills)) {
                         removeTask(timerTask);
-                        logger.logInfo(timerTask + "执行完毕，退出任务队列，总误差=" + (timerTask.targetTimeMills - currentTimeMillsForMeasurement)
-                                + " " + measurementReport.getBriefDiffReport());
+                        StringBuilder exitLog = new StringBuilder();
+                        exitLog.append(timerTask).append("执行完毕，退出任务队列");
+                        if(isMeasurementEnabled) {
+                            exitLog.append(",总误差=").append(timerTask.targetTimeMills - currentTimeMillsForMeasurement);
+                            exitLog.append(";").append(measurementReport.getBriefDiffReport());
+                        }
+                        logger.logInfo(exitLog.toString());
                     } else {
                         timerTask.updatingStartTimeMills = currentTimeMills;
                         timerTask.round++;
@@ -222,8 +243,10 @@ public class TimerThread extends Thread {
 
     public void debugDumpTaskList() {
         StringBuilder sb = new StringBuilder();
-        for(TimerTask task: timerTaskList) {
-            sb.append("task[").append(task).append("]").append(task.getNextActionTimeMills());
+        for(WrappedTimerTask wrappedTimerTask: wrappedTimerTaskList) {
+            sb.append("task[").append(wrappedTimerTask.timerTask)
+                    .append("]NextAction=").append(wrappedTimerTask.timerTask.getNextActionTimeMills())
+                    .append(",Target=").append(wrappedTimerTask.timerTask.getTargetTimeMills());
         }
         logger.logDebug("计时任务表：" + sb);
     }
@@ -233,38 +256,66 @@ public class TimerThread extends Thread {
      * @param timerTask
      */
     private void relocateTask(TimerTask timerTask) {
-        if(timerTaskList.contains(timerTask)) {
-            timerTaskList.remove(timerTask);
-        }
-        int i=0;
-        for(;i<timerTaskList.size();i++) {
-            TimerTask taskInQueue = timerTaskList.get(i);
-            if(taskInQueue.compareTo(timerTask) > 0) {
+        WrappedTimerTask wrappedTimerTask = null;
+        for(WrappedTimerTask wrappedTimerTask1: wrappedTimerTaskList) {
+            if(wrappedTimerTask1.timerTask == timerTask) {
+                wrappedTimerTask = wrappedTimerTask1;
                 break;
             }
         }
-        timerTaskList.add(i, timerTask);
+        if(wrappedTimerTask != null) {
+            wrappedTimerTaskList.remove(wrappedTimerTask);
+        } else {
+            wrappedTimerTask = new WrappedTimerTask(timerTask);
+        }
+        int i=0;
+        for(;i<wrappedTimerTaskList.size();i++) {
+            TimerTask taskInQueue = wrappedTimerTaskList.get(i).timerTask;
+            if(taskInQueue.compareTo(wrappedTimerTask.timerTask) > 0) {
+                break;
+            }
+        }
+        wrappedTimerTaskList.add(i, wrappedTimerTask);
+    }
+
+    public boolean isMeasurementEnabled() {
+        return isMeasurementEnabled;
+    }
+
+    public void setMeasurementEnabled(boolean measurementEnabled) {
+        this.isMeasurementEnabled = measurementEnabled;
     }
 
     /**
      * 通知计时线程一个任务已经发生变化
      * @param timerTask
      */
-    public void taskChanged(TimerTask timerTask) {
-        if(!timerTaskList.contains(timerTask)) {
-            logger.logWarning("计时任务" + timerTask + "已经执行完毕了");
-            return;
-        }
-        this.interrupt();
-    }
+//    public void taskChanged(TimerTask timerTask) {
+//        if(!timerTaskList.contains(timerTask)) {
+//            logger.logWarning("计时任务" + timerTask + "已经执行完毕了");
+//            return;
+//        }
+//        this.interrupt();
+//    }
+
+
 
     private void removeTask(TimerTask timerTask, long exitTimeMills) {
-        if(!timerTaskList.contains(timerTask)) {
+        int i=0;
+        for(i=0;i<wrappedTimerTaskList.size();i++) {
+            WrappedTimerTask wrappedTimerTaskInQueue = wrappedTimerTaskList.get(i);
+            if(wrappedTimerTaskInQueue.timerTask == timerTask) {
+                break;
+            }
+        }
+        if(i == wrappedTimerTaskList.size()) {
             logger.logWarning("计时任务" + timerTask + "已经执行完毕了");
             return;
         }
-        timerTaskList.remove(timerTask);
-        logger.logInfo("移除了计时任务" + timerTask);
+        wrappedTimerTaskList.remove(i);
+        if(logger.debugEnabled()) {
+            logger.logInfo("移除了计时任务" + timerTask);
+        }
         timerTask.exitTimeMills = exitTimeMills;
         this.interrupt();
     }

@@ -137,11 +137,13 @@ public class Timer {
             this.timerThread.removeTask(timerTask);
 //            long newStartTimeMills = System.currentTimeMillis() / 1000 * 1000 + lastPauseTimerTask.getStartTimeMills() % 1000;
             long millsPassed = lastPauseTimerTask.getExitTimeMills() - lastPauseTimerTask.getStartTimeMills();
-            long newStartTimeMills = System.currentTimeMillis() - millsPassed % 1000;
+            long currentTimeMills = System.currentTimeMillis();
+            long millsPaused = currentTimeMills - lastPauseTimerTask.getExitTimeMills();
+            long newStartTimeMills = currentTimeMills - millsPassed % 1000;
             this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
-            this.timerTask.setLoopTask(true, newStartTimeMills + translateTimeToSeconds(resetTime) * 1000 - millsPassed);
+            this.timerTask.setLoopTask(true, lastPauseTimerTask.getTargetTimeMills() + millsPaused);
             if(logger.debugEnabled()) {
-                logger.logDebug("current=" + System.currentTimeMillis() + ",target=" + timerTask.getTargetTimeMills());
+                logger.logDebug("current=" + currentTimeMills + ",target=" + timerTask.getTargetTimeMills());
                 logger.logDebug("Timer暂停转开始状态注册任务");
             }
             this.timerThread.registerTask(timerTask);
