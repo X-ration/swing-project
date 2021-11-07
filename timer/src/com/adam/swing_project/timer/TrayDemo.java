@@ -1,5 +1,7 @@
 package com.adam.swing_project.timer;
 
+import com.adam.swing_project.timer.component.IconManager;
+
 import java.awt.*;
 
 public class TrayDemo {

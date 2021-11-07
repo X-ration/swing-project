@@ -1,4 +1,7 @@
-package com.adam.swing_project.timer.newcode;
+package com.adam.swing_project.timer;
+
+import com.adam.swing_project.timer.thread.ThreadManager;
+import com.adam.swing_project.timer.thread.TimerThread;
 
 import java.util.Collections;
 import java.util.LinkedList;

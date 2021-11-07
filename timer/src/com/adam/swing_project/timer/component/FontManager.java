@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer;
+package com.adam.swing_project.timer.component;
 
 import java.awt.*;
 

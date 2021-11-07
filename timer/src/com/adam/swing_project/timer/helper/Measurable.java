@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.newcode;
+package com.adam.swing_project.timer.helper;
 
 import java.util.List;
 
@@ -7,7 +7,7 @@ import java.util.List;
  */
 public interface Measurable<T>{
 
-    T computeDiff(T t1, T t2);
+    T minus(T t1, T t2);
     T computeAvg(List<T> tList);
 
 }
