@@ -167,14 +167,7 @@ public class TimerThread extends Thread {
                         }
                     });
                     if (!timerTask.isLoopTask || (timerTask.targetTimeMills != -1 && currentTimeMills >= timerTask.targetTimeMills)) {
-                        removeTask(timerTask);
-                        StringBuilder exitLog = new StringBuilder();
-                        exitLog.append(timerTask).append("执行完毕，退出任务队列");
-                        if(isMeasurementEnabled) {
-                            exitLog.append(",总误差=").append(timerTask.targetTimeMills - currentTimeMillsForMeasurement);
-                            exitLog.append(";").append(measurementReport.getBriefDiffReport());
-                        }
-                        logger.logInfo(exitLog.toString());
+                        removeTask(timerTask, System.currentTimeMillis(), true);
                     } else {
                         timerTask.updatingStartTimeMills = currentTimeMills;
                         timerTask.round++;
@@ -300,11 +293,13 @@ public class TimerThread extends Thread {
 
 
 
-    private void removeTask(TimerTask timerTask, long exitTimeMills) {
+    private void removeTask(TimerTask timerTask, long exitTimeMills, boolean naturalRemove) {
         int i=0;
+        WrappedTimerTask wrappedTimerTask = null;
         for(i=0;i<wrappedTimerTaskList.size();i++) {
             WrappedTimerTask wrappedTimerTaskInQueue = wrappedTimerTaskList.get(i);
             if(wrappedTimerTaskInQueue.timerTask == timerTask) {
+                wrappedTimerTask = wrappedTimerTaskInQueue;
                 break;
             }
         }
@@ -318,14 +313,26 @@ public class TimerThread extends Thread {
         }
         timerTask.exitTimeMills = exitTimeMills;
         this.interrupt();
+        StringBuilder exitLog = new StringBuilder();
+        exitLog.append(timerTask).append("执行完毕，退出任务队列");
+        if(isMeasurementEnabled) {
+            if(naturalRemove) {
+                exitLog.append("(自然退出),总误差=").append(timerTask.targetTimeMills - exitTimeMills);
+            } else {
+                exitLog.append("(中途退出)");
+            }
+            exitLog.append(",").append(wrappedTimerTask.measurementReport.getBriefDiffReport());
+        }
+        logger.logInfo(exitLog.toString());
     }
 
     /**
      * 移出一个任务
      * @param timerTask
      */
+    //todo 外部调用时，应当输出measurement
     public void removeTask(TimerTask timerTask) {
-        removeTask(timerTask, System.currentTimeMillis());
+        removeTask(timerTask, System.currentTimeMillis(), false);
     }
 
     /**

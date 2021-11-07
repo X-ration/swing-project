@@ -7,7 +7,6 @@ import java.util.List;
  * 观测报告父类
  * 不推荐直接使用，原因是大量数据对象存在于引用链，漫长的计时过程中无法被及时回收
  */
- //todo 内存优化
 public abstract class MeasurementReport<T extends Comparable<T>> implements Measurable<T> {
 
     protected final List<MeasurementObject<T>> measurementObjectList = new ArrayList<>();
