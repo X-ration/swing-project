@@ -118,10 +118,13 @@ public class TimerProgram extends JFrame{
                 do {
                     result = JOptionPane.showConfirmDialog(jFrame, "您点击了关闭按钮。" + System.lineSeparator() + "是否收起到系统托盘？（程序仍然在后台运行）", "提示", JOptionPane.YES_NO_OPTION,
                             JOptionPane.WARNING_MESSAGE, null);
+                    //后台运行
                     if (result == JOptionPane.YES_OPTION) {
                         jFrame.setVisible(false);
                         pushMessageToTrayIcon("计时器在后台运行", "可通过系统托盘图标右键-显示主窗口恢复", TrayIcon.MessageType.INFO);
-                    } else if (result == JOptionPane.NO_OPTION) {
+                    }
+                    //结束程序
+                    else if (result == JOptionPane.NO_OPTION) {
                         ThreadManager.getInstance().destroyThreads();
                         FileManager.getInstance().cleanTempFiles();
                         System.exit(0);
