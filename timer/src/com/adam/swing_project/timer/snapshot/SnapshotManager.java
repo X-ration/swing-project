@@ -23,6 +23,7 @@ public class SnapshotManager {
 
     private SnapshotManager() {
         this.snapshotDir = FileManager.getInstance().requireSubDir("snapshot");
+        logger.logInfo("启用了快照目录" + snapshotDir.getPath());
     }
 
     public static SnapshotManager getInstance() {
@@ -38,6 +39,7 @@ public class SnapshotManager {
     }
 
     public Snapshot generateSnapshot() {
+        logger.logInfo("开始生成快照文件");
         String fileName = "snapshot-" + DateTimeUtil.getInstance().getDateTimeOfTodayInFormat("yyyy-MM-dd-HH-mm-ss") + ".dat";
         File snapShotFile = new File(snapshotDir, fileName);
         Class[] classList = collectSnapshotableClassName();
@@ -52,6 +54,7 @@ public class SnapshotManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        logger.logInfo("成功生成快照文件" + snapShotFile.getPath());
         return new Snapshot(snapShotFile);
     }
 
@@ -60,6 +63,7 @@ public class SnapshotManager {
     }
 
     public List<Snapshotable> readSnapshot(Snapshot snapshot) {
+        logger.logInfo("开始读取快照文件" + snapshot.getSnapshotFile().getPath());
         List<Snapshotable> snapshotableList = new LinkedList<>();
         File file = snapshot.getSnapshotFile();
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
@@ -73,6 +77,7 @@ public class SnapshotManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        logger.logInfo("读取快照文件成功");
         return snapshotableList;
     }
 
