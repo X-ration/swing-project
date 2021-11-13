@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * 快照信息
  */
-public class Snapshot {
+public class Snapshot implements Comparable<Snapshot>{
 
     private final File snapshotFile;
     private final Date captureDate;
@@ -35,5 +35,10 @@ public class Snapshot {
 
     public Date getCaptureDate() {
         return captureDate;
+    }
+
+    @Override
+    public int compareTo(Snapshot o) {
+        return captureDate.compareTo(o.captureDate);
     }
 }

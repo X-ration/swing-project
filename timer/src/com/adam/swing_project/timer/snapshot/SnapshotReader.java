@@ -98,6 +98,16 @@ public class SnapshotReader {
         return readIntInternal();
     }
 
+    public long readLong() {
+        try {
+            requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_LONG);
+        } catch (ReadEndException e) {
+            e.printStackTrace();
+            throw new SnapshotException(e);
+        }
+        return readLongInternal();
+    }
+
     public byte readByte() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_BYTE);
@@ -189,7 +199,21 @@ public class SnapshotReader {
             e.printStackTrace();
             throw new SnapshotException(e);
         }
-        return ((int)buffer[0] << 24) + ((int)buffer[1] << 16) + ((int)buffer[2] << 8) + buffer[3];
+        return (((int)buffer[0] & 0xFF) << 24) | (((int)buffer[1] & 0xFF) << 16) |
+                (((int)buffer[2] & 0xFF) << 8) | (((int)buffer[3] & 0xFF));
+    }
+
+    private long readLongInternal() {
+        try {
+            readAFewBytes(8);
+        } catch (ReadEndException e) {
+            e.printStackTrace();
+            throw new SnapshotException(e);
+        }
+        return (((long)buffer[0] & 0xFF) << 56) | (((long)buffer[1] & 0xFF) << 48) |
+                (((long)buffer[2] & 0xFF) << 40) | (((long)buffer[3] & 0xFF) << 32) |
+                (((long)buffer[4] & 0xFF) << 24) | (((long)buffer[5] & 0xFF) << 16) |
+                (((long)buffer[6] & 0xFF) << 8) | (((long)buffer[7] & 0xFF));
     }
 
     private byte readByteInternal() {
@@ -239,6 +263,17 @@ public class SnapshotReader {
             throw new ReadEndException();
         Assert.isTrue(totalBytesRead == nBytes, "读取的字节数不符，预期=" + nBytes + ",实际=" + totalBytesRead);
         return byteArray;
+    }
+
+    public static void main(String[] args) {
+        long lv = 0x3;
+        long nlv = lv & 0xFF << 8;
+        long nlv2 = (lv & 0xFF) << 8;
+        System.out.println(nlv2);
+        byte bv = -50;
+        long nlv3 = (long) bv & 0xFF;
+        long nlv4 = ((long) bv) & 0xFF;
+        System.out.println(nlv3 + "," + nlv4);
     }
 
 }

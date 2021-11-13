@@ -91,6 +91,7 @@ public class TimerProgram extends JFrame{
         });
         jFrame.setJMenuBar(jMenuBar);
 
+        ApplicationManager.getInstance().registerProgramGlobalObject(timerPanel);
         ApplicationManager.getInstance().init();
         jFrame.setSize(400, 300);
         jFrame.setMinimumSize(new Dimension(400, 300));

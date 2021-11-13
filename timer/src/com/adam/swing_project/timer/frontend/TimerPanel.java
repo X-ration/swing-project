@@ -19,18 +19,21 @@ public class TimerPanel extends JPanel {
     }
 
     public void addSingleTimerPanel() {
-        SingleTimerPanel singleTimerPanel = new SingleTimerPanel(jFrame);
+        addSingleTimerPanel(null);
+    }
+
+    public void addSingleTimerPanel(com.adam.swing_project.timer.core.Timer timer) {
+        SingleTimerPanel singleTimerPanel;
+        if(timer == null) {
+            singleTimerPanel = new SingleTimerPanel(jFrame);
+        }  else {
+            singleTimerPanel = new SingleTimerPanel(jFrame, timer);
+        }
         //每行摆3个计时器
         int gridx = timerPanelCount % 3, gridy = timerPanelCount / 3;
         GridBagConstraints gridBagConstraints = new GridBagConstraints(gridx, gridy, 1, 1, 1, 1,
                 GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(10,10,10,10), 0, 0);
         add(singleTimerPanel, gridBagConstraints);
-        singleTimerPanel.getTimer().registerTimerListener(singleTimerPanel.getTimer().new TimeAdapter() {
-            @Override
-            public void timerStopped() {
-                TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
-            }
-        });
         timerPanelCount++;
     }
 

@@ -67,6 +67,12 @@ public class SnapshotWriter {
         return this;
     }
 
+    public SnapshotWriter writeLong(long lv)  {
+        writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_LONG);
+        writeLongInternal(lv);
+        return this;
+    }
+
     public SnapshotWriter writeByte(byte bv) {
         writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_BYTE);
         writeByteInternal(bv);
@@ -112,6 +118,17 @@ public class SnapshotWriter {
         byteArrayOutputStream.write(iv);
     }
 
+    private void writeLongInternal(long lv) {
+        byteArrayOutputStream.write((int)(lv >> 56));
+        byteArrayOutputStream.write((int)(lv >> 48));
+        byteArrayOutputStream.write((int)(lv >> 40));
+        byteArrayOutputStream.write((int)(lv >> 32));
+        byteArrayOutputStream.write((int)(lv >> 24));
+        byteArrayOutputStream.write((int)(lv >> 16));
+        byteArrayOutputStream.write((int)(lv >> 8));
+        byteArrayOutputStream.write((int)(lv));
+    }
+
     private SnapshotWriter writeByteArrayInternal(byte[] bytes) {
         try {
             byteArrayOutputStream.write(bytes);
@@ -129,6 +146,24 @@ public class SnapshotWriter {
             }
         }
         return -1;
+    }
+
+    //todo 修正序列化错误
+    public static void main(String[] args) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        long lv = 1636710987251L;
+        byteArrayOutputStream.write((int)(lv >> 56) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 48) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 40) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 32) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 24) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 16) & 0xff);
+        byteArrayOutputStream.write((int)(lv >> 8) & 0xff);
+        byteArrayOutputStream.write((int)(lv) & 0xff);
+        byte[] buffer = byteArrayOutputStream.toByteArray();
+        long lvRead = (((long)buffer[0]&0xff)<< 56) | (((long)buffer[1]&0xff)<< 48) |(((long)buffer[2]&0xff) << 40) |(((long)buffer[3]&0xff) << 32) |
+                (((long)buffer[4]&0xff) << 24) |(((long)buffer[5]&0xff) << 16) |(((long)buffer[6]&0xff) << 8) |(((long)buffer[7]&0xff) );
+        System.out.println(lv + "===" + lvRead);
     }
 
 }

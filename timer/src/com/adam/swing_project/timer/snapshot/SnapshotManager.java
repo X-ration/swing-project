@@ -6,9 +6,7 @@ import com.adam.swing_project.timer.util.DateTimeUtil;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -39,9 +37,9 @@ public class SnapshotManager {
     }
 
     public Snapshot generateSnapshot() {
-        logger.logInfo("开始生成快照文件");
         String fileName = "snapshot-" + DateTimeUtil.getInstance().getDateTimeOfTodayInFormat("yyyy-MM-dd-HH-mm-ss") + ".dat";
         File snapShotFile = new File(snapshotDir, fileName);
+        logger.logInfo("开始生成快照文件" + snapShotFile.getPath());
         Class[] classList = collectSnapshotableClassName();
         SnapshotWriter snapshotWriter = SnapshotWriter.writer(classList);
         snapshotWriter.writePreface();
@@ -54,12 +52,42 @@ public class SnapshotManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        logger.logInfo("成功生成快照文件" + snapShotFile.getPath());
+        logger.logInfo("成功写入了" + snapshotableList.size() + "个对象数据");
         return new Snapshot(snapShotFile);
     }
 
     private Class[] collectSnapshotableClassName() {
         return snapshotableList.stream().map(Object::getClass).collect(Collectors.toList()).toArray(new Class[0]);
+    }
+
+    /**
+     * 扫描快照目录下的所有快照文件
+     * @return
+     */
+    public Snapshot[] scanSnapshot() {
+        File[] files = snapshotDir.listFiles();
+        List<Snapshot> snapshotList = new LinkedList<>();
+        for(File file: files) {
+            String fileName = file.getName();
+            if(fileName.startsWith("snapshot-") && fileName.endsWith(".dat")) {
+                snapshotList.add(new Snapshot(file));
+            }
+        }
+        return snapshotList.toArray(new Snapshot[0]);
+    }
+
+    /**
+     * 读取最近的快照
+     */
+    public List<Snapshotable> readLastSnapshot() {
+        Snapshot[] snapshots = scanSnapshot();
+        if(snapshots.length == 0) {
+            logger.logWarning("没有找到快照文件");
+            return null;
+        } else {
+            Arrays.sort(snapshots);
+            return readSnapshot(snapshots[snapshots.length-1]);
+        }
     }
 
     public List<Snapshotable> readSnapshot(Snapshot snapshot) {
@@ -77,7 +105,7 @@ public class SnapshotManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        logger.logInfo("读取快照文件成功");
+        logger.logInfo("成功读取了" + snapshotableList.size() + "个对象数据");
         return snapshotableList;
     }
 
@@ -108,5 +136,8 @@ public class SnapshotManager {
         Snapshot snapshot = snapshotManager.generateSnapshot();
         List<Snapshotable> objects = snapshotManager.readSnapshot(snapshot);
         System.out.println(objects);
+        Snapshot[] snapshots = snapshotManager.scanSnapshot();
+        Arrays.sort(snapshots);
+        System.out.println(snapshots);
     }
 }

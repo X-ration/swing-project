@@ -2,6 +2,7 @@ package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.timer.component.FontManager;
 import com.adam.swing_project.timer.component.IconManager;
+import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.timer.ajswing.AJStatusButton;
 import com.adam.swing_project.timer.ajswing.AJStatusButtonBinaryStatus;
@@ -34,13 +35,46 @@ public class SingleTimerPanel extends JPanel {
     }
 
     public SingleTimerPanel(JFrame jFrame) {
-        this.timer = new Timer();
+        this(jFrame, new Timer());
+    }
+
+    public SingleTimerPanel(JFrame jFrame, Timer timer) {
+        this.timer = timer;
         this.countingLabel = new JLabel();
         this.infoLabel = new JLabel();
-        this.timerMainButton = new AJStatusButton(TimerMainButtonStatus.class, TimerMainButtonStatus.INITIAL);
-        this.stopButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, AJStatusButtonBinaryStatus.CLOSED);
-        this.editButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, AJStatusButtonBinaryStatus.OPEN);
+        TimerMainButtonStatus timerMainButtonInitialStatus = TimerMainButtonStatus.INITIAL;
+        AJStatusButtonBinaryStatus stopButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED,
+                editButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
         this.audioThread = ThreadManager.getInstance().getAudioThread();
+
+        switch (timer.getStatus()) {
+            case STOPPED:
+            case USER_STOPPED:
+                //恢复前在计时，但恢复后超过截止时间
+                if(timer.isRestoreCountingDone()) {
+                    timerMainButtonInitialStatus = TimerMainButtonStatus.STOP_PLAY;
+                    audioThread.chooseSoundFile("/Listen.wav");
+                    TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
+                    TimerStatistic.getInstance().recordNaturalCounting(timer.getResetTime().getHour(), timer.getResetTime().getMinute());
+                }
+                //否则恢复前是停止状态
+                else if(timer.getResetTime().getHour() != 0 || timer.getResetTime().getMinute() != 0) {
+                    timerMainButtonInitialStatus = TimerMainButtonStatus.START;
+                }
+                break;
+            case PAUSED:
+                timerMainButtonInitialStatus = TimerMainButtonStatus.START;
+                stopButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
+                editButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
+                break;
+            case COUNTING:
+                timerMainButtonInitialStatus = TimerMainButtonStatus.PAUSE;
+                stopButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
+                editButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
+        }
+        this.timerMainButton = new AJStatusButton(TimerMainButtonStatus.class, timerMainButtonInitialStatus);
+        this.stopButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, stopButtonInitialStatus);
+        this.editButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, editButtonInitialStatus);
         this.parentJFrame = jFrame;
 
         syncCountingLabel();
@@ -93,6 +127,7 @@ public class SingleTimerPanel extends JPanel {
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
                 audioThread.chooseSoundFile("/Listen.wav");
+                TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                 int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
                 TimerStatistic.getInstance().recordNaturalCounting(statHour, statMinute);
             }
