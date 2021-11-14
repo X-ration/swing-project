@@ -84,7 +84,7 @@ public class TimerProgram extends JFrame{
             JOptionPane.showMessageDialog(jFrame, sb.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
         });
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = "计时器 v1.0" + System.lineSeparator() +
+            String aboutMessage = "计时器 v1.2" + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);
