@@ -3,6 +3,7 @@ package com.adam.swing_project.timer.component;
 import com.adam.swing_project.timer.core.Timer;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.timer.snapshot.SnapshotManager;
 import com.adam.swing_project.timer.snapshot.Snapshotable;
 import com.adam.swing_project.timer.thread.ThreadManager;
@@ -26,21 +27,22 @@ public class ApplicationManager {
     public void init() {
         ThreadManager.getInstance().initThreads();
         List<Snapshotable> snapshotableList = SnapshotManager.getInstance().readLastSnapshot();
-        if(snapshotableList == null)
-            return;
-        for(Snapshotable snapshotable: snapshotableList) {
-            if(snapshotable instanceof Timer) {
-                TimerPanel timerPanel = getProgramGlobalObject(TimerPanel.class);
-                timerPanel.addSingleTimerPanel((Timer) snapshotable);
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+        if(snapshotableList != null) {
+            for (Snapshotable snapshotable : snapshotableList) {
+                if (snapshotable instanceof Timer) {
+                    TimerPanel timerPanel = getProgramGlobalObject(TimerPanel.class);
+                    timerPanel.addSingleTimerPanel((Timer) snapshotable);
+                }
             }
         }
+        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
     }
 
     public void close() {
         ThreadManager.getInstance().destroyThreads();
         FileManager.getInstance().cleanTempFiles();
         SnapshotManager.getInstance().generateSnapshot();
-        System.exit(0);
     }
 
     public void registerProgramGlobalObject(Object object) {

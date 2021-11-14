@@ -64,7 +64,7 @@ public class TrayIconManager {
             trayPopupMenu.add(showMainItem);
             trayPopupMenu.add(exitItem);
             showMainItem.addActionListener(e -> jFrame.setVisible(true));
-            exitItem.addActionListener(e -> ApplicationManager.getInstance().close());
+            exitItem.addActionListener(e -> System.exit(0));
             trayIcon.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {

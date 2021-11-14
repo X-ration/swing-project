@@ -1,19 +1,23 @@
 package com.adam.swing_project.timer.helper;
 
 import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.timer.snapshot.SnapshotReader;
+import com.adam.swing_project.timer.snapshot.SnapshotWriter;
+import com.adam.swing_project.timer.snapshot.Snapshotable;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-public class TimerStatistic {
+public class TimerStatistic implements Snapshotable<TimerStatistic> {
 
-    private static final TimerStatistic instance = new TimerStatistic();
+    private static TimerStatistic instance = null;
 
     private final Map<String, DayStatistic> statisticMap = new HashMap<>();
 
-    public class DayStatistic {
+    public class DayStatistic implements Snapshotable<DayStatistic>{
         private int totalHour;
         private int totalMinute;
         private int totalSecond;
@@ -82,9 +86,40 @@ public class TimerStatistic {
         public String getUserStoppedStatistic() {
             return userStoppedHour + ":" + userStoppedMinute + ":" + userStoppedSecond;
         }
+
+        @Override
+        public byte[] writeToSnapshot() {
+            return SnapshotWriter.writer()
+                    .writeInt(totalHour).writeInt(totalMinute).writeInt(totalSecond)
+                    .writeInt(naturalHour).writeInt(naturalMinute).writeInt(naturalSecond)
+                    .writeInt(userStoppedHour).writeInt(userStoppedMinute).writeInt(userStoppedSecond)
+                    .toByteArray();
+        }
+
+        @Override
+        public DayStatistic restoreFromSnapshot(byte[] bytes) {
+            SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
+            totalHour = snapshotReader.readInt();
+            totalMinute = snapshotReader.readInt();
+            totalSecond = snapshotReader.readInt();
+            naturalHour = snapshotReader.readInt();
+            naturalMinute = snapshotReader.readInt();
+            naturalSecond = snapshotReader.readInt();
+            userStoppedHour = snapshotReader.readInt();
+            userStoppedMinute = snapshotReader.readInt();
+            userStoppedSecond = snapshotReader.readInt();
+            return this;
+        }
+    }
+
+    private TimerStatistic() {
+        instance = this;
     }
 
     public static TimerStatistic getInstance() {
+        if(instance == null) {
+            instance = new TimerStatistic();
+        }
         return instance;
     }
 
@@ -125,6 +160,36 @@ public class TimerStatistic {
         }
         return result;
     }
+
+
+    @Override
+    public byte[] writeToSnapshot() {
+        Set<Map.Entry<String, DayStatistic>> entrySet = statisticMap.entrySet();
+        SnapshotWriter snapshotWriter = SnapshotWriter.writer(new Class[]{DayStatistic.class});
+        snapshotWriter.writeClassTable();
+        snapshotWriter.writeInt(entrySet.size());
+        for(Map.Entry<String, DayStatistic> entry: entrySet) {
+            snapshotWriter.writeString(entry.getKey());
+            snapshotWriter.writeSnapshotableObject(entry.getValue());
+        }
+        return snapshotWriter.toByteArray();
+    }
+
+    @Override
+    public TimerStatistic restoreFromSnapshot(byte[] bytes) {
+        SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
+        snapshotReader.readClassTable();
+        int size = snapshotReader.readInt();
+        Assert.isTrue(size>=0);
+        for(int i=0;i<size;i++) {
+            String mapKey = snapshotReader.readString();
+            DayStatistic dayStatistic = new DayStatistic();
+            snapshotReader.readSnapshotableObject(dayStatistic);
+            statisticMap.put(mapKey, dayStatistic);
+        }
+        return this;
+    }
+
 
     private DayStatistic getOrPut(int daysDiff) {
         String date = getDateString(daysDiff);

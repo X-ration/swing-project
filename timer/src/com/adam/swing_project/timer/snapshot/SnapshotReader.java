@@ -5,6 +5,7 @@ import com.adam.swing_project.timer.assertion.Assert;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 
@@ -159,6 +160,15 @@ public class SnapshotReader {
     }
 
     public Snapshotable readSnapshotableObject() {
+        return readSnapshotableObject(null);
+    }
+
+    /**
+     * 适应使用内部类的情况，由根对象生成内部类实例后传递给方法参数
+     * @param object
+     * @return
+     */
+    public Snapshotable readSnapshotableObject(Snapshotable object) {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT);
         } catch (ReadEndException e) {
@@ -166,13 +176,17 @@ public class SnapshotReader {
         }
         int classIndex = readIntInternal();
         Assert.isTrue(classIndex >= 0 && classIndex < objectClassArray.length, "类型索引超出界限！");
-        Class objectClass = objectClassArray[classIndex];
-        Snapshotable object ;
-        try {
-            object = (Snapshotable) objectClass.getDeclaredConstructor(null).newInstance(null);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            e.printStackTrace();
-            return null;
+        if(object == null) {
+            Class objectClass = objectClassArray[classIndex];
+            Assert.isTrue(Snapshotable.class.isAssignableFrom(objectClass));
+            try {
+                Constructor<Snapshotable> constructor = objectClass.getDeclaredConstructor(null);
+                constructor.setAccessible(true);
+                object = constructor.newInstance(null);
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                e.printStackTrace();
+                return null;
+            }
         }
         int objectLength = readIntInternal();
         byte[] objectData;

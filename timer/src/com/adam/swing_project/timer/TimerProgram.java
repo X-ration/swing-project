@@ -112,7 +112,7 @@ public class TimerProgram extends JFrame{
                     }
                     //结束程序
                     else if (result == JOptionPane.NO_OPTION) {
-                        ApplicationManager.getInstance().close();
+                        System.exit(0);
                     } else if (result == JOptionPane.CLOSED_OPTION) {
                         //do nothing
                     }

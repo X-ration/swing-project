@@ -2,6 +2,7 @@ package com.adam.swing_project.timer;
 
 import com.adam.swing_project.timer.component.IconManager;
 
+import javax.swing.*;
 import java.awt.*;
 
 public class TrayDemo {
@@ -10,8 +11,9 @@ public class TrayDemo {
         System.out.println(SystemTray.isSupported() ? "支持":"不支持");
         final PopupMenu popup = new PopupMenu();
         final TrayIcon trayIcon =
-                new TrayIcon((IconManager.timer24().getImage()));
+                new TrayIcon((IconManager.play24().getImage()));
         final SystemTray tray = SystemTray.getSystemTray();
+        Font f = new Font("KaiTi", Font.PLAIN, 12);
 
         // Create a pop-up menu components
         MenuItem aboutItem = new MenuItem("About");
@@ -36,6 +38,11 @@ public class TrayDemo {
         displayMenu.add(infoItem);
         displayMenu.add(noneItem);
         popup.add(exitItem);
+        MenuItem labelItem = new MenuItem("任务栏图标文字ABCD1234");
+        labelItem.setFont(f);
+        UIManager.put("MenuItem.font",f);
+        popup.add(labelItem);
+        trayIcon.setToolTip("任务栏图标Demo");
 
         trayIcon.setPopupMenu(popup);
 
