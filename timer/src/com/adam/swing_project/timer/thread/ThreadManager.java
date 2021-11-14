@@ -32,6 +32,7 @@ public class ThreadManager {
     public void destroyThreads() {
         audioThread.terminate();
         timerThread.terminate();
+        threadPoolExecutorForTimerThread.shutdownNow();
     }
 
     public AudioThread getAudioThread() {

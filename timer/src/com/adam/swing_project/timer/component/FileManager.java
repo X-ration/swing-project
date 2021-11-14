@@ -19,8 +19,40 @@ public class FileManager {
     private final Map<String, File> resourceTempFileMap = new HashMap<>();
     private final String TEMP_FILE_PREFIX = "swing_project.timer";
 
-    private FileManager() {}
+    private final File appRootDir;
 
+    private FileManager() {
+        appRootDir = new File(System.getProperty("user.home") + File.separator + "swing-timer");
+        if(!appRootDir.exists()) {
+            appRootDir.mkdir();
+        }
+    }
+
+    /**
+     * 在根目录下新建一个文件夹
+     * @param subDirName
+     */
+    public File requireSubDir(String subDirName) {
+        return requireSubDir(appRootDir, subDirName);
+    }
+
+    /**
+     * 在指定目录下新建一个文件夹
+     * @param rootDir
+     * @param subDirName
+     */
+    public File requireSubDir(File rootDir, String subDirName) {
+        if(!rootDir.exists()) {
+            rootDir.mkdir();
+        }
+        File subDir = new File(rootDir, subDirName);
+        subDir.mkdir();
+        return subDir;
+    }
+
+    /**
+     * 从jar包中读取文件，并写入到temp文件夹缓存
+     */
     public File readFileForResourcePath(String resourcePath) {
         Assert.notNull(resourcePath);
         File tempFile = resourceTempFileMap.get(resourcePath);

@@ -2,6 +2,10 @@ package com.adam.swing_project.timer.core;
 
 import com.adam.swing_project.timer.assertion.Assert;
 import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.timer.snapshot.SnapshotManager;
+import com.adam.swing_project.timer.snapshot.SnapshotReader;
+import com.adam.swing_project.timer.snapshot.SnapshotWriter;
+import com.adam.swing_project.timer.snapshot.Snapshotable;
 import com.adam.swing_project.timer.thread.ThreadManager;
 import com.adam.swing_project.timer.thread.TimerThread;
 
@@ -12,15 +16,19 @@ import java.util.concurrent.TimeUnit;
  * 计时器后端类，对应计时器的计时时间等内部属性
  * 对前端组件提供接口，并与TimerThread交互
  */
-public class Timer {
+public class Timer implements Snapshotable<Timer> {
 
     private final Time resetTime, targetTime, countingTime, startTime;
     private TimerStatus status;
     private TimerThread.TimerTask timerTask;
     private final List<TimerListener> timerListenerList = new ArrayList<>();
     private TimerThread timerThread;
-    private TimerThread.TimerTask lastPauseTimerTask;
+    private long lastPauseTimerTaskStartTimeMills, lastPauseTimerTaskExitTimeMills, lastPauseTimerTaskTargetTimeMills;
     private final Logger logger = Logger.createLogger(this);
+    /**
+     * 从快照恢复超时状态
+     */
+    private boolean restoreCountingDone = false;
 
     public enum TimerStatus {
         STOPPED, COUNTING, PAUSED, USER_STOPPED
@@ -108,6 +116,7 @@ public class Timer {
         this.startTime = new Time(0,0,0);
         this.status = TimerStatus.STOPPED;
         this.timerThread = ThreadManager.getInstance().getTimerThread();
+        SnapshotManager.getInstance().registerSnapshotable(this);
     }
 
     /**
@@ -136,12 +145,12 @@ public class Timer {
             logger.logDebug("Timer暂停转开始状态移除任务");
             this.timerThread.removeTask(timerTask);
 //            long newStartTimeMills = System.currentTimeMillis() / 1000 * 1000 + lastPauseTimerTask.getStartTimeMills() % 1000;
-            long millsPassed = lastPauseTimerTask.getExitTimeMills() - lastPauseTimerTask.getStartTimeMills();
+            long millsPassed = lastPauseTimerTaskExitTimeMills - lastPauseTimerTaskStartTimeMills;
             long currentTimeMills = System.currentTimeMillis();
-            long millsPaused = currentTimeMills - lastPauseTimerTask.getExitTimeMills();
+            long millsPaused = currentTimeMills - lastPauseTimerTaskExitTimeMills;
             long newStartTimeMills = currentTimeMills - millsPassed % 1000;
             this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
-            this.timerTask.setLoopTask(true, lastPauseTimerTask.getTargetTimeMills() + millsPaused);
+            this.timerTask.setLoopTask(true, lastPauseTimerTaskTargetTimeMills + millsPaused);
             if(logger.debugEnabled()) {
                 logger.logDebug("current=" + currentTimeMills + ",target=" + timerTask.getTargetTimeMills());
                 logger.logDebug("Timer暂停转开始状态注册任务");
@@ -160,29 +169,33 @@ public class Timer {
         this.status = TimerStatus.PAUSED;
         logger.logDebug("Timer开始转暂停状态移除任务");
         timerThread.removeTask(timerTask);
-        lastPauseTimerTask = timerTask;
+        lastPauseTimerTaskStartTimeMills = timerTask.getStartTimeMills();
+        lastPauseTimerTaskExitTimeMills = timerTask.getExitTimeMills();
+        lastPauseTimerTaskTargetTimeMills = timerTask.getTargetTimeMills();
         timerTask = timerThread.new TimerTask(timerTask.getExitTimeMills() / 1000 * 1000,
-                1, TimeUnit.SECONDS, ()->{
-            if(targetTime.second < 59) {
-                targetTime.second++;
-            } else if(targetTime.minute < 59) {
-                targetTime.second = 0;
-                targetTime.minute++;
-            } else if(targetTime.hour < 23) {
-                targetTime.second = 0;
-                targetTime.minute = 0;
-                targetTime.hour++;
-            } else {
-                targetTime.second = 0;
-                targetTime.minute = 0;
-                targetTime.hour = 0;
-            }
-            timerUpdated();
-        });
+                1, TimeUnit.SECONDS, this::timerPausedTaskAction);
         timerTask.setLoopTask(true, -1);
         logger.logDebug("Timer开始转暂停状态注册任务");
         timerThread.registerTask(timerTask);
         timerPaused();
+    }
+
+    private void timerPausedTaskAction() {
+        if(targetTime.second < 59) {
+            targetTime.second++;
+        } else if(targetTime.minute < 59) {
+            targetTime.second = 0;
+            targetTime.minute++;
+        } else if(targetTime.hour < 23) {
+            targetTime.second = 0;
+            targetTime.minute = 0;
+            targetTime.hour++;
+        } else {
+            targetTime.second = 0;
+            targetTime.minute = 0;
+            targetTime.hour = 0;
+        }
+        timerUpdated();
     }
 
     /**
@@ -210,6 +223,123 @@ public class Timer {
         timerReset();
     }
 
+
+    @Override
+    public byte[] writeToSnapshot() {
+        SnapshotWriter snapshotWriter = SnapshotWriter.writer();
+        snapshotWriter.writeInt(status.ordinal());
+        long currentTimeMills = System.currentTimeMillis();
+        logger.logDebug("writing snapshot current=" + currentTimeMills);
+        switch (status) {
+            case STOPPED:
+            case USER_STOPPED:
+                snapshotWriter.writeInt(resetTime.hour).writeInt(resetTime.minute);
+                break;
+            case COUNTING:
+                snapshotWriter.writeLong(timerTask.getStartTimeMills()).writeLong(timerTask.getTargetTimeMills()).writeLong(currentTimeMills);
+                snapshotWriter.writeInt(resetTime.hour).writeInt(resetTime.minute);
+                snapshotWriter.writeInt(countingTime.hour).writeInt(countingTime.minute).writeInt(countingTime.second);
+                snapshotWriter.writeInt(startTime.hour).writeInt(startTime.minute).writeInt(startTime.second);
+                snapshotWriter.writeInt(targetTime.hour).writeInt(targetTime.minute).writeInt(targetTime.second);
+                break;
+            case PAUSED:
+                snapshotWriter.writeLong(lastPauseTimerTaskStartTimeMills).writeLong(lastPauseTimerTaskExitTimeMills)
+                        .writeLong(lastPauseTimerTaskTargetTimeMills);
+                snapshotWriter.writeInt(resetTime.hour).writeInt(resetTime.minute);
+                snapshotWriter.writeInt(countingTime.hour).writeInt(countingTime.minute).writeInt(countingTime.second);
+                snapshotWriter.writeInt(startTime.hour).writeInt(startTime.minute).writeInt(startTime.second);
+                snapshotWriter.writeInt(targetTime.hour).writeInt(targetTime.minute).writeInt(targetTime.second);
+        }
+        return snapshotWriter.toByteArray();
+    }
+
+    @Override
+    public Timer restoreFromSnapshot(byte[] bytes) {
+        SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
+        int statusOrdinal = snapshotReader.readInt();
+        status = TimerStatus.values()[statusOrdinal];
+        switch (status) {
+            case STOPPED:
+            case USER_STOPPED:
+                int hour = snapshotReader.readInt();
+                int minute = snapshotReader.readInt();
+                resetTimer(hour, minute);
+                break;
+            case COUNTING:
+                long startTimeMills = snapshotReader.readLong(), targetTimeMills = snapshotReader.readLong();
+                long programExitTimeMills = snapshotReader.readLong();
+                long currentTimeMills = System.currentTimeMillis();
+                logger.logDebug("readVals:" + startTimeMills + "," + targetTimeMills + "," + programExitTimeMills + "," + currentTimeMills);
+                //已经超时
+                if(targetTimeMills <= currentTimeMills) {
+                    restoreCountingDone = true;
+                    status = TimerStatus.STOPPED;
+                    resetTime.hour = snapshotReader.readInt();
+                    resetTime.minute = snapshotReader.readInt();
+                } else {
+                    long newStartTimeMills = currentTimeMills /1000*1000 + startTimeMills%1000;
+                    if(startTimeMills%1000>=currentTimeMills%1000) {
+                        newStartTimeMills-=1000;
+                    }
+                    long millsPassed = currentTimeMills - programExitTimeMills + (programExitTimeMills - startTimeMills) % 1000;
+                    int secondsPassed = (int)(millsPassed/1000);
+                    this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
+                    this.timerTask.setLoopTask(true, targetTimeMills);
+                    resetTime.hour = snapshotReader.readInt();
+                    resetTime.minute = snapshotReader.readInt();
+                    countingTime.hour = snapshotReader.readInt();
+                    countingTime.minute = snapshotReader.readInt();
+                    countingTime.second = snapshotReader.readInt();
+                    logger.logDebug("secondsPassed=" + secondsPassed);
+                    logger.logDebug("countingTime=" + countingTime.hour + "," + countingTime.minute + "," + countingTime.second);
+                    while(secondsPassed-->0) {
+                        count1sInternal();
+                    }
+                    logger.logDebug("countingTime=" + countingTime.hour + "," + countingTime.minute + "," + countingTime.second);
+                    startTime.hour = snapshotReader.readInt();
+                    startTime.minute = snapshotReader.readInt();
+                    startTime.second = snapshotReader.readInt();
+                    targetTime.hour = snapshotReader.readInt();
+                    targetTime.minute = snapshotReader.readInt();
+                    targetTime.second = snapshotReader.readInt();
+                    this.timerThread.registerTask(timerTask);
+                    if(logger.debugEnabled()) {
+                        logger.logDebug("current=" + currentTimeMills + ",target=" + timerTask.getTargetTimeMills());
+                        logger.logDebug("Timer从快照恢复到计时状态");
+                    }
+                }
+                break;
+            case PAUSED:
+                lastPauseTimerTaskStartTimeMills = snapshotReader.readLong();
+                lastPauseTimerTaskExitTimeMills = snapshotReader.readLong();
+                lastPauseTimerTaskTargetTimeMills = snapshotReader.readLong();
+                resetTime.hour = snapshotReader.readInt();
+                resetTime.minute = snapshotReader.readInt();
+                countingTime.hour = snapshotReader.readInt();
+                countingTime.minute = snapshotReader.readInt();
+                countingTime.second = snapshotReader.readInt();
+                startTime.hour = snapshotReader.readInt();
+                startTime.minute = snapshotReader.readInt();
+                startTime.second = snapshotReader.readInt();
+                targetTime.hour = snapshotReader.readInt();
+                targetTime.minute = snapshotReader.readInt();
+                targetTime.second = snapshotReader.readInt();
+                currentTimeMills = System.currentTimeMillis();
+                timerTask = timerThread.new TimerTask(currentTimeMills / 1000 * 1000,
+                        1, TimeUnit.SECONDS, this::timerPausedTaskAction);
+                timerTask.setLoopTask(true, -1);
+                logger.logDebug("Timer开始转暂停状态注册任务");
+                timerThread.registerTask(timerTask);
+                if(logger.debugEnabled()) {
+                    logger.logDebug("current=" + currentTimeMills + ",target=" + timerTask.getTargetTimeMills());
+                    logger.logDebug("Timer从快照恢复到暂停状态");
+                }
+
+        }
+        return this;
+    }
+
+
     private void requireStatus(TimerStatus... statuses) {
         boolean permitStatus = false;
         for(TimerStatus status: statuses) {
@@ -222,6 +352,10 @@ public class Timer {
 
     public TimerStatus getStatus() {
         return status;
+    }
+
+    public boolean isRestoreCountingDone() {
+        return restoreCountingDone;
     }
 
     /**
@@ -268,6 +402,18 @@ public class Timer {
     public void count1s() {
         requireStatus(TimerStatus.COUNTING);
         Assert.isTrue(!(countingTime.hour == 0 && countingTime.minute == 0 && countingTime.second == 0), "Timer无法再减！");
+        count1sInternal();
+        timerUpdated();
+        if(countingTime.second == 0 && countingTime.minute == 0 && countingTime.hour == 0) {
+            this.status = TimerStatus.STOPPED;
+            this.startTime.setAllField(0,0,0);
+            this.countingTime.setAllField(0,0,0);
+            this.targetTime.setAllField(0,0,0);
+            timerStopped();
+        }
+    }
+
+    private void count1sInternal() {
         if(countingTime.second > 0) {
             countingTime.second--;
         } else if(countingTime.minute > 0) {
@@ -276,14 +422,6 @@ public class Timer {
         } else if(countingTime.hour > 0){
             countingTime.hour--;
             countingTime.minute = countingTime.second = 59;
-        }
-        timerUpdated();
-        if(countingTime.second == 0 && countingTime.minute == 0 && countingTime.hour == 0) {
-            this.status = TimerStatus.STOPPED;
-            this.startTime.setAllField(0,0,0);
-            this.countingTime.setAllField(0,0,0);
-            this.targetTime.setAllField(0,0,0);
-            timerStopped();
         }
     }
 

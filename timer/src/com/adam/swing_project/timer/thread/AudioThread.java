@@ -97,8 +97,10 @@ public class AudioThread extends Thread {
 
     /**
      * 指定音频文件并播放，外部调用
+     * 该方法要求从外部加载文件，不推荐使用
      * @param soundFile
      */
+    @Deprecated
     public void chooseSoundFile(File soundFile) {
         Assert.isTrue(soundFile.isFile() && soundFile.exists(), "音频文件不存在！");
         this.soundFile = soundFile;
