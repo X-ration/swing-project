@@ -2,6 +2,7 @@ package com.adam.swing_project.timer;
 
 import com.adam.swing_project.timer.assertion.Assert;
 import com.adam.swing_project.timer.component.ApplicationManager;
+import com.adam.swing_project.timer.component.ConfigManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.timer.helper.TimerStatistic;
@@ -15,6 +16,7 @@ public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
 
     public static void main(String[] args) {
+        ConfigManager.getInstance().loadStartupArgs(args);
         new TimerProgram();
     }
 
@@ -84,7 +86,7 @@ public class TimerProgram extends JFrame{
             JOptionPane.showMessageDialog(jFrame, sb.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
         });
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = "计时器 v1.2" + System.lineSeparator() +
+            String aboutMessage = "计时器 v1.2.1-dev" + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);

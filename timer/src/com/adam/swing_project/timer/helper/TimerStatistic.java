@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+// todo 统计时间时依据开始计时的日期统计
 public class TimerStatistic implements Snapshotable<TimerStatistic> {
 
     private static TimerStatistic instance = null;
@@ -128,8 +129,8 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
      * @param hour
      * @param minute
      */
-    public void recordNaturalCounting(int hour, int minute) {
-        DayStatistic dayStatistic = getOrPut(0);
+    public void recordNaturalCounting(int year, int month, int day, int hour, int minute) {
+        DayStatistic dayStatistic = getOrPut(year, month, day);
         dayStatistic.recordNatural(hour, minute);
     }
 
@@ -139,8 +140,8 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
      * @param minute
      * @param second
      */
-    public void recordUserStoppedCounting(int hour, int minute, int second) {
-        DayStatistic dayStatistic = getOrPut(0);
+    public void recordUserStoppedCounting(int year, int month, int day, int hour, int minute, int second) {
+        DayStatistic dayStatistic = getOrPut(year, month, day);
         dayStatistic.recordUserStopped(hour, minute, second);
     }
 
@@ -190,6 +191,15 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
         return this;
     }
 
+    private DayStatistic getOrPut(int year, int month, int day) {
+        String dateString = year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
+        DayStatistic dayStatistic = statisticMap.get(dateString);
+        if(dayStatistic == null) {
+            dayStatistic = new DayStatistic();
+            statisticMap.put(dateString, dayStatistic);
+        }
+        return dayStatistic;
+    }
 
     private DayStatistic getOrPut(int daysDiff) {
         String date = getDateString(daysDiff);
@@ -208,6 +218,13 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
         }
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         return simpleDateFormat.format(date);
+    }
+
+    public static void main(String[] args) {
+        TimerStatistic timerStatistic = TimerStatistic.getInstance();
+        timerStatistic.recordNaturalCounting(2021, 11, 15, 1, 1);
+        timerStatistic.recordUserStoppedCounting(2021, 4, 3, 1,0, 1);
+        System.out.println(timerStatistic);
     }
 
 }

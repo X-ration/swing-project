@@ -55,7 +55,9 @@ public class SingleTimerPanel extends JPanel {
                     timerMainButtonInitialStatus = TimerMainButtonStatus.STOP_PLAY;
                     audioThread.chooseSoundFile("/Listen.wav");
                     TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
-                    TimerStatistic.getInstance().recordNaturalCounting(timer.getResetTime().getHour(), timer.getResetTime().getMinute());
+                    TimerStatistic.getInstance().recordNaturalCounting(
+                            timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
+                            timer.getResetTime().getHour(), timer.getResetTime().getMinute());
                 }
                 //否则恢复前是停止状态
                 else if(timer.getResetTime().getHour() != 0 || timer.getResetTime().getMinute() != 0) {
@@ -129,7 +131,9 @@ public class SingleTimerPanel extends JPanel {
                 audioThread.chooseSoundFile("/Listen.wav");
                 TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                 int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
-                TimerStatistic.getInstance().recordNaturalCounting(statHour, statMinute);
+                TimerStatistic.getInstance().recordNaturalCounting(
+                        timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
+                        statHour, statMinute);
             }
 
             @Override
@@ -141,7 +145,9 @@ public class SingleTimerPanel extends JPanel {
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
                 int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute(),
                         statSecond = timer.getResetTime().getSecond();
-                TimerStatistic.getInstance().recordUserStoppedCounting(statHour, statMinute, statSecond);
+                TimerStatistic.getInstance().recordUserStoppedCounting(
+                        timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
+                        statHour, statMinute, statSecond);
             }
 
             @Override
