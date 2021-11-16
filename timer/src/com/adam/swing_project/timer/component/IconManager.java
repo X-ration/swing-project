@@ -37,6 +37,10 @@ public class IconManager {
         return getByFileNameOriginalSize("icons8-edit-24.png");
     }
 
+    public static ImageIcon trash24() {
+        return getByFileNameAndSquareSize("icons8-trash-96.png", 24);
+    }
+
     /**
      * 指定宽度、高度缩放图片
      * @param fileName

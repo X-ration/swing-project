@@ -2,6 +2,7 @@ package com.adam.swing_project.timer.core;
 
 import com.adam.swing_project.timer.assertion.Assert;
 import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.timer.snapshot.SnapshotManager;
 import com.adam.swing_project.timer.snapshot.SnapshotReader;
 import com.adam.swing_project.timer.snapshot.SnapshotWriter;
@@ -16,9 +17,11 @@ import java.util.concurrent.TimeUnit;
  * 计时器后端类，对应计时器的计时时间等内部属性
  * 对前端组件提供接口，并与TimerThread交互
  */
+ //todo 持久化恢复后重新计算targetTime
 public class Timer implements Snapshotable<Timer> {
 
     private final Time resetTime, targetTime, countingTime, startTime;
+    private final Date startDate;
     private TimerStatus status;
     private TimerThread.TimerTask timerTask;
     private final List<TimerListener> timerListenerList = new ArrayList<>();
@@ -31,7 +34,7 @@ public class Timer implements Snapshotable<Timer> {
     private boolean restoreCountingDone = false;
 
     public enum TimerStatus {
-        STOPPED, COUNTING, PAUSED, USER_STOPPED
+        STOPPED, COUNTING, PAUSED, USER_STOPPED, TERMINATED
     }
     public class Time {
         private int hour;
@@ -57,6 +60,35 @@ public class Timer implements Snapshotable<Timer> {
             this.hour = hour;
             this.minute = minute;
             this.second = second;
+        }
+    }
+    public class Date {
+        private int year;
+        private int month;
+        private int day;
+
+        public Date(int year, int month, int day) {
+            this.year = year;
+            this.month = month;
+            this.day = day;
+        }
+
+        public int getYear() {
+            return year;
+        }
+
+        public int getMonth() {
+            return month;
+        }
+
+        public int getDay() {
+            return day;
+        }
+
+        private void setAllField(int year, int month, int day) {
+            this.year = year;
+            this.month = month;
+            this.day = day;
         }
     }
 
@@ -114,6 +146,7 @@ public class Timer implements Snapshotable<Timer> {
         this.targetTime = new Time(0,0,0);
         this.countingTime = new Time(0,0,0);
         this.startTime = new Time(0,0,0);
+        this.startDate = new Date(0, 0, 0);
         this.status = TimerStatus.STOPPED;
         this.timerThread = ThreadManager.getInstance().getTimerThread();
         SnapshotManager.getInstance().registerSnapshotable(this);
@@ -136,6 +169,10 @@ public class Timer implements Snapshotable<Timer> {
             this.targetTime.hour = targetTime.hour;
             this.targetTime.minute = targetTime.minute;
             this.targetTime.second = targetTime.second;
+            Date startDate = getCurrentDate();
+            this.startDate.year = startDate.year;
+            this.startDate.month = startDate.month;
+            this.startDate.day = startDate.day;
             this.timerTask = timerThread.new TimerTask(1, TimeUnit.SECONDS, this::count1s);
             this.timerTask.setLoopTask(true, translateTimeToSeconds(resetTime), TimeUnit.SECONDS);
             logger.logDebug("Timer停止转开始状态注册任务");
@@ -211,6 +248,22 @@ public class Timer implements Snapshotable<Timer> {
         this.targetTime.setAllField(0,0,0);
         logger.logDebug("Timer转停止状态移除任务");
         timerStoppedByUser();
+        //todo 后期优化统计功能只在Timer内触发
+        this.startDate.setAllField(0,0,0);
+    }
+
+    /**
+     * 停止计时器，从程序中移除此对象
+     */
+    public void terminateTimer() {
+        if(timerTask!=null) {
+            timerThread.removeTask(timerTask);
+        }
+        timerTask = null;
+        SnapshotManager.getInstance().removeSnapshotable(this);
+        this.status = TimerStatus.TERMINATED;
+        timerThread = null;
+        logger.logDebug("Timer被移除了");
     }
 
     /**
@@ -220,6 +273,10 @@ public class Timer implements Snapshotable<Timer> {
         requireStatus(TimerStatus.STOPPED, TimerStatus.USER_STOPPED);
         this.resetTime.hour = hour;
         this.resetTime.minute = minute;
+        this.startTime.setAllField(0,0,0);
+        this.countingTime.setAllField(0,0,0);
+        this.targetTime.setAllField(0,0,0);
+        this.startDate.setAllField(0,0,0);
         timerReset();
     }
 
@@ -238,6 +295,7 @@ public class Timer implements Snapshotable<Timer> {
             case COUNTING:
                 snapshotWriter.writeLong(timerTask.getStartTimeMills()).writeLong(timerTask.getTargetTimeMills()).writeLong(currentTimeMills);
                 snapshotWriter.writeInt(resetTime.hour).writeInt(resetTime.minute);
+                snapshotWriter.writeInt(startDate.year).writeInt(startDate.month).writeInt(startDate.day);
                 snapshotWriter.writeInt(countingTime.hour).writeInt(countingTime.minute).writeInt(countingTime.second);
                 snapshotWriter.writeInt(startTime.hour).writeInt(startTime.minute).writeInt(startTime.second);
                 snapshotWriter.writeInt(targetTime.hour).writeInt(targetTime.minute).writeInt(targetTime.second);
@@ -245,6 +303,7 @@ public class Timer implements Snapshotable<Timer> {
             case PAUSED:
                 snapshotWriter.writeLong(lastPauseTimerTaskStartTimeMills).writeLong(lastPauseTimerTaskExitTimeMills)
                         .writeLong(lastPauseTimerTaskTargetTimeMills);
+                snapshotWriter.writeInt(startDate.year).writeInt(startDate.month).writeInt(startDate.day);
                 snapshotWriter.writeInt(resetTime.hour).writeInt(resetTime.minute);
                 snapshotWriter.writeInt(countingTime.hour).writeInt(countingTime.minute).writeInt(countingTime.second);
                 snapshotWriter.writeInt(startTime.hour).writeInt(startTime.minute).writeInt(startTime.second);
@@ -259,6 +318,9 @@ public class Timer implements Snapshotable<Timer> {
         int statusOrdinal = snapshotReader.readInt();
         status = TimerStatus.values()[statusOrdinal];
         switch (status) {
+            case TERMINATED:
+                logger.logWarning("Terminated timer restored");
+                break;
             case STOPPED:
             case USER_STOPPED:
                 int hour = snapshotReader.readInt();
@@ -270,12 +332,15 @@ public class Timer implements Snapshotable<Timer> {
                 long programExitTimeMills = snapshotReader.readLong();
                 long currentTimeMills = System.currentTimeMillis();
                 logger.logDebug("readVals:" + startTimeMills + "," + targetTimeMills + "," + programExitTimeMills + "," + currentTimeMills);
+                resetTime.hour = snapshotReader.readInt();
+                resetTime.minute = snapshotReader.readInt();
+                startDate.year = snapshotReader.readInt();
+                startDate.month = snapshotReader.readInt();
+                startDate.day = snapshotReader.readInt();
                 //已经超时
                 if(targetTimeMills <= currentTimeMills) {
                     restoreCountingDone = true;
                     status = TimerStatus.STOPPED;
-                    resetTime.hour = snapshotReader.readInt();
-                    resetTime.minute = snapshotReader.readInt();
                 } else {
                     long newStartTimeMills = currentTimeMills /1000*1000 + startTimeMills%1000;
                     if(startTimeMills%1000>=currentTimeMills%1000) {
@@ -285,8 +350,6 @@ public class Timer implements Snapshotable<Timer> {
                     int secondsPassed = (int)(millsPassed/1000);
                     this.timerTask = timerThread.new TimerTask(newStartTimeMills, 1, TimeUnit.SECONDS, this::count1s);
                     this.timerTask.setLoopTask(true, targetTimeMills);
-                    resetTime.hour = snapshotReader.readInt();
-                    resetTime.minute = snapshotReader.readInt();
                     countingTime.hour = snapshotReader.readInt();
                     countingTime.minute = snapshotReader.readInt();
                     countingTime.second = snapshotReader.readInt();
@@ -313,6 +376,9 @@ public class Timer implements Snapshotable<Timer> {
                 lastPauseTimerTaskStartTimeMills = snapshotReader.readLong();
                 lastPauseTimerTaskExitTimeMills = snapshotReader.readLong();
                 lastPauseTimerTaskTargetTimeMills = snapshotReader.readLong();
+                startDate.year = snapshotReader.readInt();
+                startDate.month = snapshotReader.readInt();
+                startDate.day = snapshotReader.readInt();
                 resetTime.hour = snapshotReader.readInt();
                 resetTime.minute = snapshotReader.readInt();
                 countingTime.hour = snapshotReader.readInt();
@@ -334,7 +400,6 @@ public class Timer implements Snapshotable<Timer> {
                     logger.logDebug("current=" + currentTimeMills + ",target=" + timerTask.getTargetTimeMills());
                     logger.logDebug("Timer从快照恢复到暂停状态");
                 }
-
         }
         return this;
     }
@@ -364,6 +429,10 @@ public class Timer implements Snapshotable<Timer> {
      */
     public Time getResetTime() {
         return resetTime;
+    }
+
+    public Date getStartDate() {
+        return startDate;
     }
 
     /**
@@ -476,7 +545,7 @@ public class Timer implements Snapshotable<Timer> {
                 calendar.get(Calendar.SECOND));
     }
     private Time getCurrentTimePlus(int hour, int minute, int second) {
-        Date date = new Date();
+        java.util.Date date = new java.util.Date();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
         calendar.add(Calendar.HOUR, hour);
@@ -484,6 +553,10 @@ public class Timer implements Snapshotable<Timer> {
         calendar.add(Calendar.SECOND, second);
         return new Time(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE),
                 calendar.get(Calendar.SECOND));
+    }
+    private Date getCurrentDate() {
+        Calendar calendar = Calendar.getInstance();
+        return new Date(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
     }
 
     private long translateTimeToSeconds(Time time) {
@@ -499,6 +572,8 @@ public class Timer implements Snapshotable<Timer> {
         Time time1 = timer.getCurrentTime(), time2 = timer.getCurrentTimePlus(0,1,0);
         System.out.println(time1);
         System.out.println(time2);
+        Date date = timer.getCurrentDate();
+        System.out.println(date);
     }
 
 }

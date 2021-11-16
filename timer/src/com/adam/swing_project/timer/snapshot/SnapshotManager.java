@@ -1,5 +1,6 @@
 package com.adam.swing_project.timer.snapshot;
 
+import com.adam.swing_project.timer.component.ConfigManager;
 import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.timer.helper.Logger;
 import com.adam.swing_project.timer.util.DateTimeUtil;
@@ -20,7 +21,12 @@ public class SnapshotManager {
 
 
     private SnapshotManager() {
-        this.snapshotDir = FileManager.getInstance().requireSubDir("snapshot");
+        String env = ConfigManager.getInstance().getConfig("env");
+        String subDir = "snapshot";
+        if(env != null) {
+            subDir += ("-" + env);
+        }
+        this.snapshotDir = FileManager.getInstance().requireSubDir(subDir);
         logger.logInfo("启用了快照目录" + snapshotDir.getPath());
     }
 
@@ -34,6 +40,14 @@ public class SnapshotManager {
      */
     public void registerSnapshotable(Snapshotable snapshotable) {
         this.snapshotableList.add(snapshotable);
+    }
+
+    /**
+     * 取消快照管理
+     * @param snapshotable
+     */
+    public void removeSnapshotable(Snapshotable snapshotable) {
+        this.snapshotableList.remove(snapshotable);
     }
 
     public Snapshot generateSnapshot() {
@@ -90,6 +104,7 @@ public class SnapshotManager {
         }
     }
 
+    //todo 考虑单例模式的情况，用构造器构造可能导致单例模式问题
     public List<Snapshotable> readSnapshot(Snapshot snapshot) {
         logger.logInfo("开始读取快照文件" + snapshot.getSnapshotFile().getPath());
         List<Snapshotable> snapshotableList = new LinkedList<>();
