@@ -34,7 +34,7 @@ public class Timer implements Snapshotable<Timer> {
     private boolean restoreCountingDone = false;
 
     public enum TimerStatus {
-        STOPPED, COUNTING, PAUSED, USER_STOPPED
+        STOPPED, COUNTING, PAUSED, USER_STOPPED, TERMINATED
     }
     public class Time {
         private int hour;
@@ -246,9 +246,24 @@ public class Timer implements Snapshotable<Timer> {
         this.startTime.setAllField(0,0,0);
         this.countingTime.setAllField(0,0,0);
         this.targetTime.setAllField(0,0,0);
-        this.startDate.setAllField(0,0,0);
         logger.logDebug("Timer转停止状态移除任务");
         timerStoppedByUser();
+        //todo 后期优化统计功能只在Timer内触发
+        this.startDate.setAllField(0,0,0);
+    }
+
+    /**
+     * 停止计时器，从程序中移除此对象
+     */
+    public void terminateTimer() {
+        if(timerTask!=null) {
+            timerThread.removeTask(timerTask);
+        }
+        timerTask = null;
+        SnapshotManager.getInstance().removeSnapshotable(this);
+        this.status = TimerStatus.TERMINATED;
+        timerThread = null;
+        logger.logDebug("Timer被移除了");
     }
 
     /**
@@ -303,6 +318,9 @@ public class Timer implements Snapshotable<Timer> {
         int statusOrdinal = snapshotReader.readInt();
         status = TimerStatus.values()[statusOrdinal];
         switch (status) {
+            case TERMINATED:
+                logger.logWarning("Terminated timer restored");
+                break;
             case STOPPED:
             case USER_STOPPED:
                 int hour = snapshotReader.readInt();

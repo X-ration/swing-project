@@ -42,6 +42,14 @@ public class SnapshotManager {
         this.snapshotableList.add(snapshotable);
     }
 
+    /**
+     * 取消快照管理
+     * @param snapshotable
+     */
+    public void removeSnapshotable(Snapshotable snapshotable) {
+        this.snapshotableList.remove(snapshotable);
+    }
+
     public Snapshot generateSnapshot() {
         String fileName = "snapshot-" + DateTimeUtil.getInstance().getDateTimeOfTodayInFormat("yyyy-MM-dd-HH-mm-ss") + ".dat";
         File snapShotFile = new File(snapshotDir, fileName);

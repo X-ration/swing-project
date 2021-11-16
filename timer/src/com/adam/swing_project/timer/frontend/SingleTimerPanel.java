@@ -1,13 +1,10 @@
 package com.adam.swing_project.timer.frontend;
 
-import com.adam.swing_project.timer.component.FontManager;
-import com.adam.swing_project.timer.component.IconManager;
-import com.adam.swing_project.timer.component.TrayIconManager;
+import com.adam.swing_project.timer.component.*;
 import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.timer.ajswing.AJStatusButton;
 import com.adam.swing_project.timer.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.timer.thread.AudioThread;
-import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.timer.helper.Logger;
 import com.adam.swing_project.timer.thread.ThreadManager;
 import com.adam.swing_project.timer.core.Timer;
@@ -24,11 +21,12 @@ import java.awt.event.WindowEvent;
 public class SingleTimerPanel extends JPanel {
 
     private final JLabel countingLabel, infoLabel;
-    private final AJStatusButton timerMainButton, stopButton, editButton;
+    private final AJStatusButton timerMainButton, stopButton, editButton, deleteButton;
     private final JFrame parentJFrame;
 
     private final Timer timer;
     private final AudioThread audioThread;
+    private final Logger logger = Logger.createLogger(this);
 
     public enum TimerMainButtonStatus {
         INITIAL, START, PAUSE, STOP_PLAY
@@ -44,10 +42,16 @@ public class SingleTimerPanel extends JPanel {
         this.infoLabel = new JLabel();
         TimerMainButtonStatus timerMainButtonInitialStatus = TimerMainButtonStatus.INITIAL;
         AJStatusButtonBinaryStatus stopButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED,
-                editButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
+                editButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN,
+                deleteButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
         this.audioThread = ThreadManager.getInstance().getAudioThread();
 
         switch (timer.getStatus()) {
+            case TERMINATED:
+                editButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
+                deleteButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
+                logger.logWarning("Terminated Panel");
+                break;
             case STOPPED:
             case USER_STOPPED:
                 //恢复前在计时，但恢复后超过截止时间
@@ -77,6 +81,7 @@ public class SingleTimerPanel extends JPanel {
         this.timerMainButton = new AJStatusButton(TimerMainButtonStatus.class, timerMainButtonInitialStatus);
         this.stopButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, stopButtonInitialStatus);
         this.editButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, editButtonInitialStatus);
+        this.deleteButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, deleteButtonInitialStatus);
         this.parentJFrame = jFrame;
 
         syncCountingLabel();
@@ -106,6 +111,15 @@ public class SingleTimerPanel extends JPanel {
         editButton.setIcon(IconManager.edit24());
         editButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> showResetTimeDialog());
         editButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
+        deleteButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> {
+            ajStatusButton.setIcon(IconManager.trash24());
+            ajStatusButton.setEnabled(true);
+        }, e -> {
+            TimerPanel timerPanel = ApplicationManager.getInstance().getProgramGlobalObject(TimerPanel.class);
+            timerPanel.removeSingleTimerPanel(this);
+            timer.terminateTimer();
+        });
+        deleteButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
         timer.registerTimerListener(new Timer.TimerListener() {
             @Override
             public void timerStarted() {
@@ -179,6 +193,9 @@ public class SingleTimerPanel extends JPanel {
         southConstraints = new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.CENTER,
                 GridBagConstraints.NONE, new Insets(0,0,0,0), 0, 0);
         southPanel.add(editButton, southConstraints);
+        southConstraints = new GridBagConstraints(3, 0, 1, 1, 0, 0, GridBagConstraints.CENTER,
+                GridBagConstraints.NONE, new Insets(0,0,0,0),0, 0);
+        southPanel.add(deleteButton, southConstraints);
 
         GridBagLayout timerPanelLayout =  new GridBagLayout();
         setLayout(timerPanelLayout);
