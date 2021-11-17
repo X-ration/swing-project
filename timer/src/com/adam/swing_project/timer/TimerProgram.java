@@ -22,7 +22,7 @@ public class TimerProgram extends JFrame{
 
     public TimerProgram() {
         //窗体
-        JFrame jFrame = new JFrame("Swing计时器 v1.2.1");
+        JFrame jFrame = new JFrame("Swing计时器 v1.2.2-dev");
         Container contentPane = jFrame.getContentPane();
         TimerPanel timerPanel = new TimerPanel(jFrame);
         JScrollPane jScrollPane = new JScrollPane(timerPanel);
@@ -36,20 +36,26 @@ public class TimerProgram extends JFrame{
         //菜单栏
         JMenuBar jMenuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("文件(F)")
+                , optionMenu = new JMenu("选项(O)")
                 , helpMenu = new JMenu("帮助(H)");
         JMenuItem fileNewTimerItem = new JMenuItem("新建计时器(N)"),
                 fileStatisticItem = new JMenuItem("统计数据(S)"),
                 helpAboutItem = new JMenuItem("关于(A)");
+        JCheckBoxMenuItem optionStatItem = new JCheckBoxMenuItem("启用统计");
         jMenuBar.add(fileMenu);
+        jMenuBar.add(optionMenu);
         jMenuBar.add(helpMenu);
         fileMenu.add(fileNewTimerItem);
         fileMenu.add(fileStatisticItem);
+        optionMenu.add(optionStatItem);
         helpMenu.add(helpAboutItem);
         fileMenu.setMnemonic('F');
+        optionMenu.setMnemonic('O');
         helpMenu.setMnemonic('H');
         fileNewTimerItem.setMnemonic('N');
         fileStatisticItem.setMnemonic('S');
         helpAboutItem.setMnemonic('A');
+        optionStatItem.setState(TimerStatistic.getInstance().isStatEnabled());
         fileNewTimerItem.addActionListener(e -> {
             timerPanel.addSingleTimerPanel();
             jFrame.revalidate();
@@ -85,8 +91,9 @@ public class TimerProgram extends JFrame{
             }
             JOptionPane.showMessageDialog(jFrame, sb.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
         });
+        optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = "计时器 v1.2.1" + System.lineSeparator() +
+            String aboutMessage = "计时器 v1.2.2-dev" + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);

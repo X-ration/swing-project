@@ -11,6 +11,7 @@ import java.io.IOException;
  * 2021-10-27 21:28
  * Modified 1
  */
+ //todo 或许有内存问题
 public class IconManager {
 
     public static ImageIcon timer24() {

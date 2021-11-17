@@ -11,10 +11,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-// todo 统计时间时依据开始计时的日期统计
 public class TimerStatistic implements Snapshotable<TimerStatistic> {
 
     private static TimerStatistic instance = null;
+    private boolean statEnabled = true;
+    private final Logger logger = Logger.createLogger(this);
 
     private final Map<String, DayStatistic> statisticMap = new HashMap<>();
 
@@ -130,8 +131,10 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
      * @param minute
      */
     public void recordNaturalCounting(int year, int month, int day, int hour, int minute) {
-        DayStatistic dayStatistic = getOrPut(year, month, day);
-        dayStatistic.recordNatural(hour, minute);
+        if(statEnabled) {
+            DayStatistic dayStatistic = getOrPut(year, month, day);
+            dayStatistic.recordNatural(hour, minute);
+        }
     }
 
     /**
@@ -141,8 +144,19 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
      * @param second
      */
     public void recordUserStoppedCounting(int year, int month, int day, int hour, int minute, int second) {
-        DayStatistic dayStatistic = getOrPut(year, month, day);
-        dayStatistic.recordUserStopped(hour, minute, second);
+        if(statEnabled) {
+            DayStatistic dayStatistic = getOrPut(year, month, day);
+            dayStatistic.recordUserStopped(hour, minute, second);
+        }
+    }
+
+    public boolean isStatEnabled() {
+        return statEnabled;
+    }
+
+    public void setStatEnabled(boolean statEnabled) {
+        logger.logInfo("统计功能已[" + (statEnabled ? "启用" : "禁用") + "]");
+        this.statEnabled = statEnabled;
     }
 
     /**
