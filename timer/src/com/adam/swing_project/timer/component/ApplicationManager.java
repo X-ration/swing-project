@@ -2,12 +2,13 @@ package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.timer.core.Timer;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.timer.helper.TimerStatistic;
-import com.adam.swing_project.timer.snapshot.SnapshotManager;
-import com.adam.swing_project.timer.snapshot.Snapshotable;
+import com.adam.swing_project.library.snapshot.SnapshotManager;
+import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.timer.thread.ThreadManager;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -26,6 +27,14 @@ public class ApplicationManager {
 
     public void init() {
         ThreadManager.getInstance().initThreads();
+        String env = ConfigManager.getInstance().getConfig("env");
+        String subDir = "snapshot";
+        if(env != null) {
+            subDir += ("-" + env);
+        }
+        File snapshotDir = FileManager.getInstance().requireSubDir(subDir);
+        SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
+
         List<Snapshotable> snapshotableList = SnapshotManager.getInstance().readLastSnapshot();
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
         if(snapshotableList != null) {

@@ -1,8 +1,8 @@
-package com.adam.swing_project.timer.test;
+package com.adam.swing_project.library.snapshot;
 
 import com.adam.swing_project.library.assertion.Assert;
-import com.adam.swing_project.timer.snapshot.SnapshotReader;
-import com.adam.swing_project.timer.snapshot.SnapshotWriter;
+import com.adam.swing_project.library.snapshot.SnapshotReader;
+import com.adam.swing_project.library.snapshot.SnapshotWriter;
 
 import java.util.Random;
 

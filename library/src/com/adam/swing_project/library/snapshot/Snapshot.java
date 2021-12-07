@@ -1,9 +1,8 @@
-package com.adam.swing_project.timer.snapshot;
+package com.adam.swing_project.library.snapshot;
 
-import com.adam.swing_project.timer.util.DateTimeUtil;
+import com.adam.swing_project.library.util.JdkDateTimeUtil;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -26,7 +25,7 @@ public class Snapshot implements Comparable<Snapshot>{
         String fileName = snapshotFile.getName();
         int fi = fileName.indexOf("-") + 1, li = fileName.lastIndexOf(".dat");
         String dateString = fileName.substring(fi, li);
-        this.captureDate = DateTimeUtil.getInstance().getDateInFormat(dateString, "yyyy-MM-dd-HH-mm-ss");
+        this.captureDate = JdkDateTimeUtil.getInstance().getDateInFormat(dateString, "yyyy-MM-dd-HH-mm-ss");
     }
 
     public File getSnapshotFile() {

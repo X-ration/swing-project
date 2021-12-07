@@ -1,7 +1,7 @@
 package com.adam.swing_project.timer;
 
 import com.adam.swing_project.timer.thread.ThreadManager;
-import com.adam.swing_project.timer.thread.TimerThread;
+import com.adam.swing_project.library.timer.TimerThread;
 
 import java.util.Collections;
 import java.util.LinkedList;

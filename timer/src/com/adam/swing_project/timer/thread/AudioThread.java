@@ -3,7 +3,7 @@ package com.adam.swing_project.timer.thread;
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.assertion.AssertException;
 import com.adam.swing_project.timer.component.FileManager;
-import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.library.logger.Logger;
 
 import javax.sound.sampled.*;
 import javax.swing.*;

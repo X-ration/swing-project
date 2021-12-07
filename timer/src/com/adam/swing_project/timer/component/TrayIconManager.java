@@ -1,6 +1,6 @@
 package com.adam.swing_project.timer.component;
 
-import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.library.logger.Logger;
 
 import javax.swing.*;
 import java.awt.*;

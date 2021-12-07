@@ -1,12 +1,10 @@
-package com.adam.swing_project.timer.snapshot;
+package com.adam.swing_project.library.snapshot;
 
-import com.adam.swing_project.timer.component.ConfigManager;
-import com.adam.swing_project.timer.component.FileManager;
-import com.adam.swing_project.timer.helper.Logger;
-import com.adam.swing_project.timer.util.DateTimeUtil;
+import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.util.JdkDateTimeUtil;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,17 +19,17 @@ public class SnapshotManager {
 
 
     private SnapshotManager() {
-        String env = ConfigManager.getInstance().getConfig("env");
-        String subDir = "snapshot";
-        if(env != null) {
-            subDir += ("-" + env);
-        }
-        this.snapshotDir = FileManager.getInstance().requireSubDir(subDir);
-        logger.logInfo("启用了快照目录" + snapshotDir.getPath());
     }
 
     public static SnapshotManager getInstance() {
         return instance;
+    }
+
+    public void setSnapshotDir(File dir) {
+        Assert.notNull(dir);
+        Assert.isTrue(dir.isDirectory() && dir.exists(), "非法的文件夹路径！");
+        this.snapshotDir = dir;
+        logger.logInfo("启用了快照目录" + snapshotDir.getPath());
     }
 
     /**
@@ -51,7 +49,7 @@ public class SnapshotManager {
     }
 
     public Snapshot generateSnapshot() {
-        String fileName = "snapshot-" + DateTimeUtil.getInstance().getDateTimeOfTodayInFormat("yyyy-MM-dd-HH-mm-ss") + ".dat";
+        String fileName = "snapshot-" + JdkDateTimeUtil.getInstance().getDateTimeOfTodayInFormat("yyyy-MM-dd-HH-mm-ss") + ".dat";
         File snapShotFile = new File(snapshotDir, fileName);
         logger.logInfo("开始生成快照文件" + snapShotFile.getPath());
         Class[] classList = collectSnapshotableClassName();
