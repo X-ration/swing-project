@@ -1,6 +1,6 @@
-package com.adam.swing_project.jcompiler.ajswing;
+package com.adam.swing_project.library.ajswing;
 
-import com.adam.swing_project.jcompiler.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;

@@ -1,6 +1,6 @@
 package com.adam.swing_project.jcompiler.internal_compiler;
 
-import com.adam.swing_project.jcompiler.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 
 import java.io.File;
 import java.util.ArrayList;

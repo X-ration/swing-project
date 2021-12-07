@@ -1,6 +1,6 @@
 package com.adam.swing_project.jcompiler.shellexecutor;
 
-import com.adam.swing_project.jcompiler.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 
 import java.io.*;
 import java.util.ArrayList;

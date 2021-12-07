@@ -1,6 +1,7 @@
 package com.adam.swing_project.local_file_transfer;
 
 import java.lang.reflect.Field;
+import com.adam.swing_project.library.assertion.Assert;
 
 public class HookCompleteChecker {
     private Object target;

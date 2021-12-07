@@ -1,8 +1,7 @@
 package com.adam.swing_project.timer.core;
 
-import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.timer.helper.Logger;
-import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.timer.snapshot.SnapshotManager;
 import com.adam.swing_project.timer.snapshot.SnapshotReader;
 import com.adam.swing_project.timer.snapshot.SnapshotWriter;

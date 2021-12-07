@@ -1,6 +1,6 @@
 package com.adam.swing_project.timer.snapshot;
 
-import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
