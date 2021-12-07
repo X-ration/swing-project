@@ -1,6 +1,6 @@
 package com.adam.swing_project.timer.test;
 
-import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.timer.snapshot.SnapshotReader;
 import com.adam.swing_project.timer.snapshot.SnapshotWriter;
 

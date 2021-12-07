@@ -1,6 +1,6 @@
-package com.adam.swing_project.timer.ajswing;
+package com.adam.swing_project.library.ajswing;
 
-import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;

@@ -2,8 +2,8 @@ package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.timer.component.*;
 import com.adam.swing_project.timer.helper.TimerStatistic;
-import com.adam.swing_project.timer.ajswing.AJStatusButton;
-import com.adam.swing_project.timer.ajswing.AJStatusButtonBinaryStatus;
+import com.adam.swing_project.library.ajswing.AJStatusButton;
+import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.timer.thread.AudioThread;
 import com.adam.swing_project.timer.helper.Logger;
 import com.adam.swing_project.timer.thread.ThreadManager;

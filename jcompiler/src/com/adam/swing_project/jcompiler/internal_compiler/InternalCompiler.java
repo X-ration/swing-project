@@ -1,9 +1,9 @@
 package com.adam.swing_project.jcompiler.internal_compiler;
 
-import com.adam.swing_project.jcompiler.assertion.Assert;
 import com.adam.swing_project.jcompiler.shellexecutor.CommandInput;
 import com.adam.swing_project.jcompiler.shellexecutor.CommandOutput;
 import com.adam.swing_project.jcompiler.shellexecutor.ShellExecutor;
+import com.adam.swing_project.library.assertion.Assert;
 
 import java.io.*;
 import java.util.ArrayList;

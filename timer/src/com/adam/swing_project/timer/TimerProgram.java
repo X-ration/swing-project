@@ -1,6 +1,6 @@
 package com.adam.swing_project.timer;
 
-import com.adam.swing_project.timer.assertion.Assert;
+import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.timer.component.ApplicationManager;
 import com.adam.swing_project.timer.component.ConfigManager;
 import com.adam.swing_project.timer.component.TrayIconManager;

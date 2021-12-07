@@ -1,8 +1,8 @@
 package com.adam.swing_project.jcompiler;
 
-import com.adam.swing_project.jcompiler.ajswing.AJFileChooserButton;
-import com.adam.swing_project.jcompiler.ajswing.AJLabel;
-import com.adam.swing_project.jcompiler.ajswing.AJScrollPane;
+import com.adam.swing_project.library.ajswing.AJFileChooserButton;
+import com.adam.swing_project.library.ajswing.AJLabel;
+import com.adam.swing_project.library.ajswing.AJScrollPane;
 import com.adam.swing_project.jcompiler.internal_compiler.CompileEvent;
 import com.adam.swing_project.jcompiler.internal_compiler.CompileEventType;
 import com.adam.swing_project.jcompiler.internal_compiler.CompileListener;

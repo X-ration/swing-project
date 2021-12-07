@@ -1,4 +1,4 @@
-package com.adam.swing_project.local_file_transfer;
+package com.adam.swing_project.library.assertion;
 
 public class AssertException extends RuntimeException{
     public AssertException(String msg) {
