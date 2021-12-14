@@ -57,7 +57,7 @@ public class FatJarClassLoader extends ClassLoader {
                 throw new ClassNotFoundException(name);
             }
             Class clazz = defineClass(name, classBytes, 0, classBytes.length);
-            logger.logDebug("Found class '" + clazz.getName() + "' by " + this);
+//            logger.logDebug("Found class '" + clazz.getName() + "' by " + this);
             return clazz;
         } catch (IOException e) {
             e.printStackTrace();

@@ -14,6 +14,7 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
     private String[] libFileNames;
 
     public ExplodedJarLibReader(File rootFile) {
+        super(null);
         this.rootFile = rootFile;
         LoaderAssert.isTrue(rootFile != null && rootFile.isDirectory() && rootFile.exists(), FatJarLibReaderException.class, "Invalid root file");
         this.rootName = rootFile.getName();
@@ -23,6 +24,7 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     @Override
     protected byte[] readClass(String className) throws IOException {
+        LoaderAssert.isTrue(fatJarEnabled, FatJarLibReaderException.class, "Fat-jar not enabled!");
         for(String fatJarFileName: libFileNames) {
             File fatJarLibDirectory = new File(rootFile, fatJarLibDir);
             LoaderAssert.isTrue(fatJarLibDirectory.exists() && fatJarLibDirectory.isDirectory(), FatJarLibReaderException.class,
@@ -31,7 +33,12 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
             LoaderAssert.isTrue(fatJarFile.exists(), FatJarLibReaderException.class,
                     "Fat jar '" + fatJarFile +"' does not exist");
             if(fatJarFile.isFile() && fatJarFile.getName().endsWith(".jar")) {
-                byte[] classBytes = new PackagedJarLibReader(fatJarFile).readClass(className);
+                AbstractFatJarLibReader reader = getCachedEntryReader(fatJarFileName);
+                if(reader == null) {
+                    reader = new PackagedJarLibReader(fatJarFile, this);
+                    cacheEntryReader(fatJarFileName, reader);
+                }
+                byte[] classBytes = reader.readClass(className);
                 if (classBytes != null) {
                     return classBytes;
                 }
@@ -42,6 +49,7 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     @Override
     protected void scan() {
+        LoaderAssert.isTrue(fatJarEnabled, FatJarLibReaderException.class, "Fat-jar not enabled!");
         File fatJarLibDirectory = new File(rootFile, fatJarLibDir);
         LoaderAssert.isTrue(fatJarLibDirectory.exists() && fatJarLibDirectory.isDirectory(), FatJarLibReaderException.class,
                 "Fat jar lib '" + fatJarLibDir +"' is not a valid directory");
@@ -71,6 +79,7 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
     }
 
     @Override
-    protected void close() throws IOException{
+    protected void close() throws IOException {
+        super.close();
     }
 }
