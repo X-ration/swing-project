@@ -2,6 +2,7 @@ package com.adam.swing_project.loader;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
@@ -55,7 +56,9 @@ public class FatJarClassLoader extends ClassLoader {
             if(classBytes == null) {
                 throw new ClassNotFoundException(name);
             }
-            return defineClass(name, classBytes, 0, classBytes.length);
+            Class clazz = defineClass(name, classBytes, 0, classBytes.length);
+            logger.logDebug("Found class '" + clazz.getName() + "' by " + this);
+            return clazz;
         } catch (IOException e) {
             e.printStackTrace();
             throw new ClassNotFoundException(name);
@@ -66,9 +69,11 @@ public class FatJarClassLoader extends ClassLoader {
         FatJarClassLoader fatJarClassLoader = new FatJarClassLoader();
         fatJarClassLoader.init();
         try {
-            Class clazz = fatJarClassLoader.loadClass("com.adam.swing_project.library.assertion.Assert");
-            System.out.println(clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
+            Class clazz = fatJarClassLoader.loadClass("com.adam.swing_project.local_file_transfer.LocalFileTransfer");
+            System.out.println("Loaded class '" + clazz.getName() + "' by " + clazz.getClassLoader());
+            Method method = clazz.getMethod("main", String[].class);
+            method.invoke(null, (Object) new String[0]);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

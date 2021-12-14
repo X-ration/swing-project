@@ -12,7 +12,7 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
-//todo 嵌套fat-jar
+//todo resource, 代码优化
 public class PackagedJarLibReader extends AbstractFatJarLibReader{
 
     private final File rootFile;
@@ -40,6 +40,14 @@ public class PackagedJarLibReader extends AbstractFatJarLibReader{
                 return classBytes;
             }
         }
+        for(String nestedLibEntryName: nestLibEntryNames) {
+            byte[] classBytes = new NestedJarLibReader
+                    (()->jarFile.getInputStream(jarFile.getJarEntry(nestedLibEntryName)), nestedLibEntryName)
+                    .readClass(className);
+            if(classBytes != null) {
+                return classBytes;
+            }
+        }
         return null;
     }
 
@@ -58,8 +66,16 @@ public class PackagedJarLibReader extends AbstractFatJarLibReader{
         }
         this.nestLibEntryNames = nestedLibEntryNames.toArray(new String[nestedLibEntryNames.size()]);
         this.classEntryNames = classEntryNames.toArray(new String[classEntryNames.size()]);
-        logger.logDebug("Found class entries: " + Arrays.toString(this.classEntryNames) + " for '" + rootName + "'");
-        logger.logDebug("Found nested lib entries: " + Arrays.toString(this.nestLibEntryNames) + " for '" + rootName + "'");
+        if(this.classEntryNames.length > 0) {
+            logger.logDebug("Found class entries: " + Arrays.toString(this.classEntryNames) + " for '" + rootName + "'");
+        } else {
+            logger.logDebug("Found no class entries for '" + rootName + "'");
+        }
+        if(this.nestLibEntryNames.length > 0) {
+            logger.logDebug("Found nested lib entries: " + Arrays.toString(this.nestLibEntryNames) + " for '" + rootName + "'");
+        } else {
+            logger.logDebug("Found no nested lib entries for '" + rootName + "'");
+        }
     }
 
     @Override

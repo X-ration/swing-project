@@ -53,7 +53,11 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
             }
         }
         this.libFileNames = fatJars.toArray(new String[fatJars.size()]);
-        logger.logDebug("Found lib files: " + Arrays.toString(this.libFileNames));
+        if(this.libFileNames.length > 0) {
+            logger.logDebug("Found lib files: " + Arrays.toString(this.libFileNames) + " for '" + rootName + "'");
+        } else {
+            logger.logDebug("Found no lib files for '" + rootName + "'");
+        }
     }
 
     @Override
