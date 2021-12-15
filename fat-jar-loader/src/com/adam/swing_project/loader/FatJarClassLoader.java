@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.util.Arrays;
 
 /**
  * 支持Fat-jar的类加载器
@@ -56,20 +58,45 @@ public class FatJarClassLoader extends ClassLoader {
             if(classBytes == null) {
                 throw new ClassNotFoundException(name);
             }
-            Class clazz = defineClass(name, classBytes, 0, classBytes.length);
-//            logger.logDebug("Found class '" + clazz.getName() + "' by " + this);
-            return clazz;
+            return defineClass(name, classBytes, 0, classBytes.length);
         } catch (IOException e) {
             e.printStackTrace();
             throw new ClassNotFoundException(name);
         }
     }
 
+    @Override
+    protected URL findResource(String name) {
+        URL url = super.findResource(name);
+        if(url == null) {
+            try {
+                url = new URL(null, "fat-jar:" + name, new URLStreamHandler() {
+                    @Override
+                    protected URLConnection openConnection(URL u) throws IOException {
+                        return new FatJarResourceURLConnection(u, fatJarLibReader);
+                    }
+                });
+            } catch (Exception e) {
+                FatJarClassLoaderException ne = new FatJarClassLoaderException("Reading resource '" + name + "' error");
+                ne.initCause(e);
+                throw ne;
+            }
+        }
+        return url;
+    }
+
+    public AbstractFatJarLibReader getFatJarLibReader() {
+        return fatJarLibReader;
+    }
+
     public static void main(String[] args) {
         FatJarClassLoader fatJarClassLoader = new FatJarClassLoader();
         fatJarClassLoader.init();
+        URL url = FatJarClassLoader.class.getResource("/META-INF/MANIFEST.MF");
+        System.out.println(url.getProtocol());
+        System.out.println(url.getPath());
         try {
-            Class clazz = fatJarClassLoader.loadClass("com.adam.swing_project.local_file_transfer.LocalFileTransfer");
+            Class clazz = fatJarClassLoader.loadClass("com.adam.swing_project.jcompiler.JCompiler");
             System.out.println("Loaded class '" + clazz.getName() + "' by " + clazz.getClassLoader());
             Method method = clazz.getMethod("main", String[].class);
             method.invoke(null, (Object) new String[0]);

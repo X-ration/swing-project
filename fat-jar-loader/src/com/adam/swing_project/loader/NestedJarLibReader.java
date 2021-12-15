@@ -12,7 +12,7 @@ import java.util.jar.Manifest;
 public class NestedJarLibReader extends AbstractFatJarLibReader{
 
     private NestInputStreamVendor rootInputStreamVendor;
-    private String[] classEntryNames, nestedLibEntryNames;
+    private String[] classEntryNames, nestedLibEntryNames, fileEntryNames;
 
     interface NestInputStreamVendor {
         InputStream getStream() throws IOException;
@@ -29,10 +29,10 @@ public class NestedJarLibReader extends AbstractFatJarLibReader{
     @Override
     protected byte[] readClass(String className) throws IOException {
         String expectedEntryName = className.replaceAll("\\.", "/") + ".class";
+        JarEntry jarEntry;
         for(String classEntryName: classEntryNames) {
             if(expectedEntryName.equals(classEntryName)) {
                 JarInputStream jarInputStream = getJarInputStream();
-                JarEntry jarEntry;
                 while((jarEntry = jarInputStream.getNextJarEntry()) != null) {
                     if(jarEntry.getName().equals(expectedEntryName)) {
                         byte[] classBytes = jarInputStream.readAllBytes();
@@ -44,7 +44,6 @@ public class NestedJarLibReader extends AbstractFatJarLibReader{
             }
         }
         JarInputStream jarInputStream = getJarInputStream();
-        JarEntry jarEntry;
         while((jarEntry = jarInputStream.getNextJarEntry()) != null) {
             if(containsNestedEntry(jarEntry.getName())) {
                 byte[] nestedLibBytes = jarInputStream.readAllBytes();
@@ -65,6 +64,41 @@ public class NestedJarLibReader extends AbstractFatJarLibReader{
         return null;
     }
 
+    @Override
+    protected InputStream readResourceAsStream(String resourceName) throws IOException {
+        JarEntry jarEntry;
+        for(String fileEntryName: fileEntryNames) {
+            if(fileEntryName.equals(resourceName)) {
+                JarInputStream jarInputStream = getJarInputStream();
+                while((jarEntry = jarInputStream.getNextJarEntry()) != null) {
+                    if(jarEntry.getName().equals(fileEntryName)) {
+                        logger.logDebug("Found resource '" + resourceName + "' input stream from " + debugGetReaderPath());
+                        return jarInputStream;
+                    }
+                }
+            }
+        }
+        JarInputStream jarInputStream = getJarInputStream();
+        while((jarEntry = jarInputStream.getNextJarEntry()) != null) {
+            if(containsNestedEntry(jarEntry.getName())) {
+                byte[] nestedLibBytes = jarInputStream.readAllBytes();
+                AbstractFatJarLibReader reader = getCachedEntryReader(jarEntry.getName());
+                if(reader == null) {
+                    reader = new NestedJarLibReader
+                            (()->new ByteArrayInputStream(nestedLibBytes), jarEntry.getName(), this);
+                    cacheEntryReader(jarEntry.getName(), reader);
+                }
+                InputStream inputStream = reader.readResourceAsStream(resourceName);
+                if(inputStream != null) {
+                    jarInputStream.close();
+                    return inputStream;
+                }
+            }
+        }
+        jarInputStream.close();
+        return null;
+    }
+
     private boolean containsNestedEntry(String entryName) {
         for(String nestedLibEntryName: nestedLibEntryNames) {
             if(nestedLibEntryName.equals(entryName))
@@ -77,7 +111,9 @@ public class NestedJarLibReader extends AbstractFatJarLibReader{
     protected void scan() throws IOException {
         JarInputStream jarInputStream = getJarInputStream();
         JarEntry jarEntry;
-        LinkedList<String> classEntryNames = new LinkedList<>(), nestedLibEntryNames = new LinkedList<>();
+        LinkedList<String> classEntryNames = new LinkedList<>(),
+                nestedLibEntryNames = new LinkedList<>(),
+                fileEntryNames = new LinkedList<>();
         while((jarEntry = jarInputStream.getNextJarEntry()) != null) {
             if(!jarEntry.isDirectory() && jarEntry.getName().endsWith(".class")) {
                 classEntryNames.add(jarEntry.getName());
@@ -85,9 +121,13 @@ public class NestedJarLibReader extends AbstractFatJarLibReader{
             if(fatJarEnabled && !jarEntry.isDirectory() && jarEntry.getName().startsWith(fatJarLibDir) && jarEntry.getName().endsWith(".jar")) {
                 nestedLibEntryNames.add(jarEntry.getName());
             }
+            if(!jarEntry.isDirectory()) {
+                fileEntryNames.add(jarEntry.getName());
+            }
         }
         this.classEntryNames = classEntryNames.toArray(new String[classEntryNames.size()]);
         this.nestedLibEntryNames = nestedLibEntryNames.toArray(new String[nestedLibEntryNames.size()]);
+        this.fileEntryNames = fileEntryNames.toArray(new String[fileEntryNames.size()]);
         logger.logDebug("Found " + this.classEntryNames.length + " class entries for '" + rootName + "'");
         if(this.nestedLibEntryNames.length > 0) {
             logger.logDebug("Found nested lib entries: " + Arrays.toString(this.nestedLibEntryNames) + " for '" + rootName + "'");

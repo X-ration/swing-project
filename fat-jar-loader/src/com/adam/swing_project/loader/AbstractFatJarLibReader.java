@@ -1,6 +1,7 @@
 package com.adam.swing_project.loader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -13,9 +14,11 @@ public abstract class AbstractFatJarLibReader {
     protected final Map<String, AbstractFatJarLibReader> entryReaderIndexMap = new HashMap<>();
     protected AbstractFatJarLibReader parent;
     protected boolean fatJarEnabled;
+    protected String fatJarRunClassName;
     protected static final String MANIFEST_FILE_PATH = "/META-INF/MANIFEST.MF";
     protected static final String FAT_JAR_ENABLED = "Fat-Jar-Enabled";
     protected static final String FAT_JAR_LIBRARY_DIR = "Fat-Jar-Lib-Dir";
+    protected static final String FAT_JAR_RUN_CLASS_NAME = "Fat-Jar-Run-Class-Name";
 
     protected AbstractFatJarLibReader(AbstractFatJarLibReader parent) {
         this.parent = parent;
@@ -45,6 +48,11 @@ public abstract class AbstractFatJarLibReader {
         }
         this.fatJarLibDir = fatJarLibDir;
         logger.logDebug("Resolved " + FAT_JAR_LIBRARY_DIR + "=" + fatJarLibDir + " for '" + rootName + "'");
+        String fatJarRunClassName = attributes.getValue(FAT_JAR_RUN_CLASS_NAME);
+        if(fatJarRunClassName != null && !fatJarRunClassName.equals("")) {
+            this.fatJarRunClassName = fatJarRunClassName;
+            logger.logDebug("Resolved " + FAT_JAR_RUN_CLASS_NAME + "=" + fatJarRunClassName + " for '" + rootName + "'");
+        }
     }
 
     /**
@@ -53,6 +61,12 @@ public abstract class AbstractFatJarLibReader {
      * @return
      */
     protected abstract byte[] readClass(String className) throws IOException;
+
+    public String getFatJarRunClassName() {
+        return fatJarRunClassName;
+    }
+
+    protected abstract InputStream readResourceAsStream(String resourceName) throws IOException;
 
     /**
      * 扫描所有类文件，嵌套lib
@@ -79,7 +93,7 @@ public abstract class AbstractFatJarLibReader {
             return reader.rootName;
         }
         return debugGetReaderPathInternal(reader.parent) + "/" +
-                ((reader instanceof PackagedJarLibReader) ? reader.fatJarLibDir + "/" : "") + reader.rootName;
+                ((reader instanceof PackagedJarLibReader) ? reader.parent.fatJarLibDir + "/" : "") + reader.rootName;
     }
 
     protected void close() throws IOException {

@@ -1,3 +1,5 @@
 Manifest-Version: 1.0
 Fat-Jar-Enabled: True
 Fat-Jar-Lib-Dir: lib
+Main-Class: com.adam.swing_project.loader.FatJarClassLoader
+Fat-Jar-Run-Class-Name: com.adam.swing_project.jcompiler.JCompiler
