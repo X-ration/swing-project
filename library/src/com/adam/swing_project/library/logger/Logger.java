@@ -30,18 +30,18 @@ public class Logger {
      * @param msg
      */
     public void logDebug(String msg) {
-        logDebug(msg, LogLevel.DEBUG);
+        log(msg, LogLevel.DEBUG);
     }
     public void logInfo(String msg) {
-        logDebug(msg, LogLevel.INFO);
+        log(msg, LogLevel.INFO);
     }
     public void logWarning(String msg) {
-        logDebug(msg, LogLevel.WARNING);
+        log(msg, LogLevel.WARNING);
     }
     public void logError(String msg) {
-        logDebug(msg, LogLevel.ERROR);
+        log(msg, LogLevel.ERROR);
     }
-    public void logDebug(String msg, LogLevel logLevel) {
+    public void log(String msg, LogLevel logLevel) {
         if(!levelEnabled(logLevel)) {
             return;
         }
@@ -53,7 +53,9 @@ public class Logger {
         }
         sb.append(" ");
         sb.append(getCurrentTimeStandardFormat()).append(" ");
-        sb.append("[Logger of '").append(object).append("' in thread '").append(Thread.currentThread().getName()).append("'] ")
+        String objectString = object.toString();
+        String objectStringLog = objectString.substring(objectString.lastIndexOf('.') + 1);
+        sb.append("[Logger of '").append(objectStringLog).append("' in thread '").append(Thread.currentThread().getName()).append("'] ")
                         .append(msg);
         System.out.println(sb);
     }
