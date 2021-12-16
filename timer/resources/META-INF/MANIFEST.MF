@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Fat-Jar-Enabled: True
+Fat-Jar-Lib-Dir: lib

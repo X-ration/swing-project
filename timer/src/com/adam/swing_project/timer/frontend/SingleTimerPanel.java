@@ -59,7 +59,7 @@ public class SingleTimerPanel extends JPanel {
                 //恢复前在计时，但恢复后超过截止时间
                 if(timer.isRestoreCountingDone()) {
                     timerMainButtonInitialStatus = TimerMainButtonStatus.STOP_PLAY;
-                    audioThread.chooseSoundFile("/Listen.wav");
+                    audioThread.chooseSoundFile("/audio/Listen.wav");
                     TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                     TimerStatistic.getInstance().recordNaturalCounting(
                             timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
@@ -144,7 +144,7 @@ public class SingleTimerPanel extends JPanel {
                 timerMainButton.changeStatus(TimerMainButtonStatus.STOP_PLAY);
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
-                audioThread.chooseSoundFile("/Listen.wav");
+                audioThread.chooseSoundFile("/audio/Listen.wav");
                 TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                 int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
                 TimerStatistic.getInstance().recordNaturalCounting(

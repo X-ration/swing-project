@@ -269,7 +269,7 @@ public class AudioThread extends Thread {
                     }
                 }
                 audioThread.stopPlay();
-                URL fileURL = AudioThread.class.getResource("/" + selected.getText());
+                URL fileURL = AudioThread.class.getResource("/audio/" + selected.getText());
                 Assert.notNull(fileURL, AssertException.class, "文件不存在" + selected.getText());
                 File soundFile = new File(fileURL.toURI());
                 audioThread.chooseSoundFile(soundFile);

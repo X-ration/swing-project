@@ -21,8 +21,10 @@ public class TimerProgram extends JFrame{
     }
 
     public TimerProgram() {
+        String version = "1.2.3";
+        String versionInfo =  "Swing计时器 v" + version;
         //窗体
-        JFrame jFrame = new JFrame("Swing计时器 v1.2.2");
+        JFrame jFrame = new JFrame(versionInfo);
         Container contentPane = jFrame.getContentPane();
         TimerPanel timerPanel = new TimerPanel(jFrame);
         JScrollPane jScrollPane = new JScrollPane(timerPanel);
@@ -93,7 +95,7 @@ public class TimerProgram extends JFrame{
         });
         optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = "计时器 v1.2.2" + System.lineSeparator() +
+            String aboutMessage = versionInfo + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);

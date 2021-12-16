@@ -12,7 +12,7 @@ import java.util.jar.Manifest;
 public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     private File rootFile;
-    private String[] libFileNames;
+    private String[] libFileNames, classFilePaths;
 
     public ExplodedJarLibReader(File rootFile) {
         super(null);
@@ -25,6 +25,17 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     @Override
     protected byte[] readClass(String className) throws IOException {
+        String expectedClassFilePath = rootFile.getPath() + File.separator + className.replaceAll("\\.", File.separator.equals("\\") ? "\\\\" : ("\\" + File.separator)) + ".class";
+        for(String classFilePath: classFilePaths) {
+            if(classFilePath.equals(expectedClassFilePath)) {
+                File classFile = new File(classFilePath);
+                FileInputStream fileInputStream = new FileInputStream(classFile);
+                byte[] classBytes = fileInputStream.readAllBytes();
+                fileInputStream.close();
+                logger.logDebug("Found class '" + className + "' bytes from " + debugGetReaderPath());
+                return classBytes;
+            }
+        }
         for(String fatJarFileName: libFileNames) {
             AbstractFatJarLibReader reader = getCachedReader(fatJarFileName);
             byte[] classBytes = reader.readClass(className);
@@ -64,26 +75,46 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     @Override
     protected void scan() {
-        if(!fatJarEnabled) {
-            this.libFileNames = new String[0];
-            return;
-        }
-        File fatJarLibDirectory = new File(rootFile, fatJarLibDir);
-        LoaderAssert.isTrue(fatJarLibDirectory.exists() && fatJarLibDirectory.isDirectory(), FatJarLibReaderException.class,
-                "Fat jar lib '" + fatJarLibDir +"' is not a valid directory");
-        File[] fatJarLibDirFiles = fatJarLibDirectory.listFiles();
-        List<String> fatJars = new LinkedList<>();
-        for(File file: fatJarLibDirFiles) {
-            if(file.isFile() && file.getName().endsWith(".jar")) {
-                fatJars.add(file.getName());
+        List<String> libFileNames = new LinkedList<>(), classFilePaths = new LinkedList<>();
+
+        List<File> allFiles = recursiveListFile(rootFile);
+        for(File file:allFiles) {
+            if(file.isFile() && file.getName().endsWith(".class")) {
+                classFilePaths.add(file.getPath());
             }
         }
-        this.libFileNames = fatJars.toArray(new String[fatJars.size()]);
+        if(fatJarEnabled) {
+            File fatJarLibDirectory = new File(rootFile, fatJarLibDir);
+            LoaderAssert.isTrue(fatJarLibDirectory.exists() && fatJarLibDirectory.isDirectory(), FatJarLibReaderException.class,
+                    "Fat jar lib '" + fatJarLibDir + "' is not a valid directory");
+            List<File> fatJarLibDirFiles = recursiveListFile(fatJarLibDirectory);
+            for (File file : fatJarLibDirFiles) {
+                if (file.isFile() && file.getName().endsWith(".jar")) {
+                    libFileNames.add(file.getName());
+                }
+            }
+        }
+        this.libFileNames = libFileNames.toArray(new String[libFileNames.size()]);
+        this.classFilePaths = classFilePaths.toArray(new String[classFilePaths.size()]);
+        logger.logDebug("Found " + this.classFilePaths.length + " class files for '" + rootName + "'");
         if(this.libFileNames.length > 0) {
             logger.logDebug("Found lib files: " + Arrays.toString(this.libFileNames) + " for '" + rootName + "'");
         } else {
             logger.logDebug("Found no lib files for '" + rootName + "'");
         }
+    }
+
+    private List<File> recursiveListFile(File rootDirectory) {
+        LinkedList<File> fileLinkedList = new LinkedList<>();
+        File[] files = rootDirectory.listFiles();
+        for(File file: files) {
+            if(file.isFile()) {
+                fileLinkedList.add(file);
+            } else if(file.isDirectory()) {
+                fileLinkedList.addAll(recursiveListFile(file));
+            }
+        }
+        return fileLinkedList;
     }
 
     @Override

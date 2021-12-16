@@ -1,5 +1,7 @@
 package com.adam.swing_project.timer.component;
 
+import com.adam.swing_project.library.runtime.ManagedShutdownHook;
+import com.adam.swing_project.library.runtime.PriorityShutdownHook;
 import com.adam.swing_project.timer.core.Timer;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.library.logger.Logger;
@@ -36,7 +38,15 @@ public class ApplicationManager {
         SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
 
         List<Snapshotable> snapshotableList = SnapshotManager.getInstance().readLastSnapshot();
-        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+        PriorityShutdownHook shutdownHook = new PriorityShutdownHook() {
+            @Override
+            public void run() {
+                close();
+            }
+        };
+        shutdownHook.setName("TimerProgram shutdown hook");
+        ManagedShutdownHook.getInstance().registerShutdownHook(shutdownHook);
+        logger.logDebug("Registered shutdown hook");
         if(snapshotableList != null) {
             for (Snapshotable snapshotable : snapshotableList) {
                 if (snapshotable instanceof Timer) {

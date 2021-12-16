@@ -8,6 +8,23 @@ public class FatJarRunner {
     private static final LoaderLogger logger = LoaderLogger.createLogger(FatJarRunner.class);
 
     public static void main(String[] args) {
+        resolveLogArgs(args);
+
+        FatJarClassLoader fatJarClassLoader = new FatJarClassLoader();
+        fatJarClassLoader.init();
+        String runClassName = fatJarClassLoader.getFatJarRunClassName();
+        LoaderAssert.isTrue(runClassName != null && !runClassName.equals(""), "Unable to resolve run class");
+
+        try {
+            Class<?> clazz = fatJarClassLoader.loadClass(runClassName);
+            Method method = clazz.getMethod("main", String[].class);
+            method.invoke(null, (Object) args);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void resolveLogArgs(String[] args) {
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver();
         argumentResolver.resolveArgs(args);
 
@@ -21,19 +38,6 @@ public class FatJarRunner {
             }
         }
         LoaderLogger.setGlobalLogLevel(logLevel);
-
-        FatJarClassLoader fatJarClassLoader = new FatJarClassLoader();
-        fatJarClassLoader.init();
-        AbstractFatJarLibReader rootReader = fatJarClassLoader.getFatJarLibReader();
-        String runClassName = rootReader.getFatJarRunClassName();
-        LoaderAssert.isTrue(runClassName != null && !runClassName.equals(""), "Unable to resolve run class");
-        try {
-            Class<?> clazz = fatJarClassLoader.loadClass(runClassName);
-            Method method = clazz.getMethod("main", String[].class);
-            method.invoke(null, (Object) args);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }
