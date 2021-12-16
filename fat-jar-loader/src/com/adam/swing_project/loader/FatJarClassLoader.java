@@ -19,6 +19,7 @@ public class FatJarClassLoader extends ClassLoader {
 
     private File rootFile;
     private AbstractFatJarLibReader fatJarLibReader;
+    private String fatJarRunClassName;
 
     public void init() {
         try {
@@ -33,16 +34,7 @@ public class FatJarClassLoader extends ClassLoader {
             } else {
                 this.fatJarLibReader = new PackagedJarLibReader(rootFile);
             }
-
-            Thread cleanThread = new Thread(()->{
-                try {
-                    fatJarLibReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-            cleanThread.setName("FatJarClassLoaderCleanThread");
-            Runtime.getRuntime().addShutdownHook(cleanThread);
+            this.fatJarRunClassName = fatJarLibReader.getFatJarRunClassName();
         } catch (Exception e) {
             e.printStackTrace();
             FatJarClassLoaderException ne = new FatJarClassLoaderException("Error loading class");
@@ -65,6 +57,10 @@ public class FatJarClassLoader extends ClassLoader {
         }
     }
 
+    protected Class<?> directLoadClass(String name) throws ClassNotFoundException {
+        return findClass(name);
+    }
+
     @Override
     protected URL findResource(String name) {
         URL url = super.findResource(name);
@@ -85,8 +81,8 @@ public class FatJarClassLoader extends ClassLoader {
         return url;
     }
 
-    public AbstractFatJarLibReader getFatJarLibReader() {
-        return fatJarLibReader;
+    public String getFatJarRunClassName() {
+        return fatJarRunClassName;
     }
 
     public static void main(String[] args) {

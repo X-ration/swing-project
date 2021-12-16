@@ -1,4 +1,6 @@
-package com.adam.swing_project.timer.helper;
+package com.adam.swing_project.library.timer;
+
+import com.adam.swing_project.library.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.List;

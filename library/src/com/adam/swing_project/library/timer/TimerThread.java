@@ -1,9 +1,6 @@
-package com.adam.swing_project.timer.thread;
+package com.adam.swing_project.library.timer;
 
-import com.adam.swing_project.timer.helper.Logger;
-import com.adam.swing_project.timer.helper.MeasurementObject;
-import com.adam.swing_project.timer.helper.MeasurementReport;
-import com.adam.swing_project.timer.helper.MergingMeasurementReport;
+import com.adam.swing_project.library.logger.Logger;
 
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -14,15 +11,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimerThread extends Thread {
     private final Object workingLock = new Object();
-//    private final List<TimerTask> timerTaskList = Collections.synchronizedList(new LinkedList<>());
     private final List<WrappedTimerTask> wrappedTimerTaskList = Collections.synchronizedList(new LinkedList<>());
-//    private final Map<TimerTask, MeasurementReport<Long>> timerTaskMeasurementReportMap = new HashMap<>();
     private boolean isTerminating = false;
     private boolean isMeasurementEnabled = true;
     private final Logger logger = Logger.createLogger(this);
     private final ThreadPoolExecutor workerThreadPool;
 
-    TimerThread(ThreadPoolExecutor threadPoolExecutor) {
+    public TimerThread(ThreadPoolExecutor threadPoolExecutor) {
         workerThreadPool = threadPoolExecutor;
     }
 
@@ -330,7 +325,6 @@ public class TimerThread extends Thread {
      * 移出一个任务
      * @param timerTask
      */
-    //todo 外部调用时，应当输出measurement
     public void removeTask(TimerTask timerTask) {
         removeTask(timerTask, System.currentTimeMillis(), false);
     }

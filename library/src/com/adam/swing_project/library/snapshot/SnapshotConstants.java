@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.snapshot;
+package com.adam.swing_project.library.snapshot;
 
 public class SnapshotConstants {
 

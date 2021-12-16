@@ -1,5 +1,7 @@
 package com.adam.swing_project.timer.thread;
 
+import com.adam.swing_project.library.timer.TimerThread;
+
 import java.util.concurrent.*;
 
 /**

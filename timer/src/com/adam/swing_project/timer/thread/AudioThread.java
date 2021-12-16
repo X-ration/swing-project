@@ -3,7 +3,7 @@ package com.adam.swing_project.timer.thread;
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.assertion.AssertException;
 import com.adam.swing_project.timer.component.FileManager;
-import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.library.logger.Logger;
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -269,7 +269,7 @@ public class AudioThread extends Thread {
                     }
                 }
                 audioThread.stopPlay();
-                URL fileURL = AudioThread.class.getResource("/" + selected.getText());
+                URL fileURL = AudioThread.class.getResource("/audio/" + selected.getText());
                 Assert.notNull(fileURL, AssertException.class, "文件不存在" + selected.getText());
                 File soundFile = new File(fileURL.toURI());
                 audioThread.chooseSoundFile(soundFile);

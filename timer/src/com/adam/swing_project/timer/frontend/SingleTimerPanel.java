@@ -1,11 +1,13 @@
 package com.adam.swing_project.timer.frontend;
 
+import com.adam.swing_project.library.datetime.Time;
+import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.timer.component.*;
 import com.adam.swing_project.timer.helper.TimerStatistic;
 import com.adam.swing_project.library.ajswing.AJStatusButton;
 import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.timer.thread.AudioThread;
-import com.adam.swing_project.timer.helper.Logger;
+import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.timer.thread.ThreadManager;
 import com.adam.swing_project.timer.core.Timer;
 
@@ -57,7 +59,7 @@ public class SingleTimerPanel extends JPanel {
                 //恢复前在计时，但恢复后超过截止时间
                 if(timer.isRestoreCountingDone()) {
                     timerMainButtonInitialStatus = TimerMainButtonStatus.STOP_PLAY;
-                    audioThread.chooseSoundFile("/Listen.wav");
+                    audioThread.chooseSoundFile("/audio/Listen.wav");
                     TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                     TimerStatistic.getInstance().recordNaturalCounting(
                             timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
@@ -142,7 +144,7 @@ public class SingleTimerPanel extends JPanel {
                 timerMainButton.changeStatus(TimerMainButtonStatus.STOP_PLAY);
                 stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                 editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
-                audioThread.chooseSoundFile("/Listen.wav");
+                audioThread.chooseSoundFile("/audio/Listen.wav");
                 TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
                 int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
                 TimerStatistic.getInstance().recordNaturalCounting(
@@ -251,41 +253,20 @@ public class SingleTimerPanel extends JPanel {
 
     //内部方法
     private void syncCountingLabel() {
-        Timer.Time countingTime = timer.getCountingTime();
-        countingLabel.setText(wrapTimeHourToSecond(countingTime));
+        Time countingTime = timer.getCountingTime();
+        countingLabel.setText(DateTimeUtil.wrapTimeHourToSecond(countingTime));
     }
     private void syncInfoLabel() {
         StringBuilder sb = new StringBuilder();
-        Timer.Time resetTime = timer.getResetTime()
+        Time resetTime = timer.getResetTime()
                 , targetTime = timer.getTargetTime()
                 , startTime = timer.getStartTime();
-        sb.append(wrapTimeHourToMinute(resetTime));
+        sb.append(DateTimeUtil.wrapTimeHourToMinute(resetTime));
         if(startTime != null && targetTime != null) {
-            sb.append(" (").append(wrapTimeHourToMinute(startTime))
-                    .append("~").append(wrapTimeHourToMinute(targetTime)).append(")");
+            sb.append(" (").append(DateTimeUtil.wrapTimeHourToMinute(startTime))
+                    .append("~").append(DateTimeUtil.wrapTimeHourToMinute(targetTime)).append(")");
         }
         infoLabel.setText(sb.toString());
-    }
-
-    //独立方法
-    private String wrapTimeHourToSecond(Timer.Time time) {
-        return wrapTimeHourToSecond(time.getHour(),time.getMinute(),time.getSecond());
-    }
-    private String wrapTimeHourToMinute(Timer.Time time) {
-        return wrapTimeHourToMinute(time.getHour(), time.getMinute());
-    }
-    private String wrapTimeHourToSecond(int hour, int minute, int second) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(hour < 10 ? "0" : "").append(hour).append(":")
-                .append(minute < 10 ? "0" : "").append(minute).append(":")
-                .append(second < 10 ? "0" : "").append(second);
-        return sb.toString();
-    }
-    private String wrapTimeHourToMinute(int hour, int minute) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(hour < 10 ? "0" : "").append(hour).append(":")
-                .append(minute < 10 ? "0" : "").append(minute);
-        return sb.toString();
     }
 
     private void showResetTimeDialog() {

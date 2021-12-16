@@ -20,7 +20,7 @@ public class AudioDemo {
 
         private void beforePlay() {
             try {
-                audioInputStream = AudioSystem.getAudioInputStream(AudioDemo.class.getResource("/WAVSony Ericsson.wav"));
+                audioInputStream = AudioSystem.getAudioInputStream(AudioDemo.class.getResource("/audio/Sony.wav"));
                 AudioFormat format = audioInputStream.getFormat();
                 DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
                 dataLine = (SourceDataLine) AudioSystem.getLine(info);

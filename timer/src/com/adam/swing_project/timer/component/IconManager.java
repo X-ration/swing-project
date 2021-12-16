@@ -58,7 +58,7 @@ public class IconManager {
             Image Itemp = affineTransformOp.filter(srcImage, null);
             imageIcon = new ImageIcon(Itemp);
             */
-            BufferedImage bufferedImage = ImageIO.read(IconManager.class.getResourceAsStream("/" + fileName))
+            BufferedImage bufferedImage = ImageIO.read(IconManager.class.getResourceAsStream("/icon/" + fileName))
                     , newImage = new BufferedImage(width, height, bufferedImage.getType());
             Graphics graphics = newImage.getGraphics();
             graphics.drawImage(bufferedImage, 0, 0, width, height, null);
@@ -86,7 +86,7 @@ public class IconManager {
      * @return
      */
     private static ImageIcon getByFileNameOriginalSize(String fileName) {
-        return new ImageIcon(IconManager.class.getResource("/"+fileName));
+        return new ImageIcon(IconManager.class.getResource("/icon/"+fileName));
     }
 
     public static void main(String[] args) {

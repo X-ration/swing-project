@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.helper;
+package com.adam.swing_project.library.timer;
 
 /**
  * 观测数据模型

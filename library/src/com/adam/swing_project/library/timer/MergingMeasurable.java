@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.helper;
+package com.adam.swing_project.library.timer;
 
 import java.util.List;
 

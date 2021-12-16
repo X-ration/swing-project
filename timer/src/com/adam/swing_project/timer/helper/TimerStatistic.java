@@ -1,9 +1,10 @@
 package com.adam.swing_project.timer.helper;
 
+import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.assertion.Assert;
-import com.adam.swing_project.timer.snapshot.SnapshotReader;
-import com.adam.swing_project.timer.snapshot.SnapshotWriter;
-import com.adam.swing_project.timer.snapshot.Snapshotable;
+import com.adam.swing_project.library.snapshot.SnapshotReader;
+import com.adam.swing_project.library.snapshot.SnapshotWriter;
+import com.adam.swing_project.library.snapshot.Snapshotable;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.util;
+package com.adam.swing_project.library.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -7,10 +7,10 @@ import java.util.Date;
 /**
  * 和日期，时间相关的工具类
  */
-public class DateTimeUtil {
-    private static final DateTimeUtil instance = new DateTimeUtil();
+public class JdkDateTimeUtil {
+    private static final JdkDateTimeUtil instance = new JdkDateTimeUtil();
 
-    public static DateTimeUtil getInstance() {
+    public static JdkDateTimeUtil getInstance() {
         return instance;
     }
 

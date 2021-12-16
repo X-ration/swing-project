@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.snapshot;
+package com.adam.swing_project.library.snapshot;
 
 import com.adam.swing_project.library.assertion.Assert;
 
@@ -260,15 +260,19 @@ public class SnapshotReader {
         }
     }
 
+    //fix read snapshot error
     private byte[] readMoreBytes(int nBytes) throws ReadEndException{
         Assert.notNull(inputStream);
         Assert.isTrue(nBytes > BUFFER_SIZE, "读取字节数过少！");
         byte[] byteArray = new byte[nBytes];
         int totalBytesRead = 0, bytesRead = 0;
         try {
-            while ((bytesRead = inputStream.read(buffer)) != -1){
+            int remainingBytes = nBytes;
+            while (remainingBytes != 0 && (bytesRead = inputStream.read(buffer, 0, Math.min(remainingBytes, BUFFER_SIZE))) != -1){
+                //System.out.println("nBytes="+nBytes+",bytesRead="+bytesRead+",totalBytesRead="+totalBytesRead);
                 System.arraycopy(buffer, 0, byteArray, totalBytesRead, bytesRead);
                 totalBytesRead += bytesRead;
+                remainingBytes -= bytesRead;
             }
         } catch (IOException e) {
             e.printStackTrace();
