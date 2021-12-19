@@ -55,7 +55,7 @@ public class AudioThread extends Thread {
      */
     @Override
     public void run() {
-        logger.logInfo("AudioController started.");
+        logger.logInfo("AudioThread started.");
         try {
             while (status != AudioControllerStatus.TERMINATING) {
                 synchronized (lock) {
@@ -82,7 +82,7 @@ public class AudioThread extends Thread {
         } catch (Exception e) {
             logger.logException(e);
         }
-        logger.logInfo("AudioController terminated.");
+        logger.logInfo("AudioThread terminated.");
     }
 
     private void wakeup() {

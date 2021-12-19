@@ -100,7 +100,7 @@ public class TimerThread extends Thread {
      */
     @Override
     public void run() {
-        logger.logInfo("(New)TimerThread started");
+        logger.logInfo("TimerThread started");
         try {
             while (!isTerminating) {
                 synchronized (workingLock) {
@@ -178,7 +178,7 @@ public class TimerThread extends Thread {
         } catch (Exception e) {
             logger.logException(e);
         }
-        logger.logInfo("(New)TimerThread terminated");
+        logger.logInfo("TimerThread terminated");
     }
 
     /**
