@@ -5,7 +5,7 @@ package com.adam.swing_project.library.snapshot;
  * 快照化接口
  * @param <T>
  */
-public interface Snapshotable<T> {
+public interface Snapshotable{
 
     /**
      * 将自己转化为字节数组
@@ -18,6 +18,6 @@ public interface Snapshotable<T> {
      * @param bytes
      * @return
      */
-    T restoreFromSnapshot(byte[] bytes);
+    void restoreFromSnapshot(byte[] bytes);
 
 }

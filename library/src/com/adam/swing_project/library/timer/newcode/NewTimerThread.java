@@ -157,6 +157,11 @@ public class NewTimerThread extends Thread{
                 synchronized (modifyingLock) {
                     Collections.sort(timerTaskList);
                 }
+//                StringBuilder sb = new StringBuilder();
+//                for(TimerTask timerTask: timerTaskList) {
+//                    sb.append("Task '").append(timerTask.taskName).append("' nextActionMills=").append(timerTask.nextActionMills()).append(" ");
+//                }
+//                System.out.println(sb.toString());
 
                 TimerTask timerTask = timerTaskList.get(0);
                 long currentMills = System.currentTimeMillis();

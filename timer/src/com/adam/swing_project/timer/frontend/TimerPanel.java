@@ -1,6 +1,7 @@
 package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.timer.newcode.Timer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,7 +15,7 @@ public class TimerPanel extends JPanel {
 
     private final JFrame jFrame;
     private int timerPanelCount = 0;
-    private List<SingleTimerPanel> singleTimerPanelList = new LinkedList<>();
+    private List<NewSingleTimerPanel> singleTimerPanelList = new LinkedList<>();
     private final Logger logger = Logger.createLogger(this);
 
     public TimerPanel(JFrame jFrame) {
@@ -26,19 +27,19 @@ public class TimerPanel extends JPanel {
         addSingleTimerPanel(null);
     }
 
-    public void addSingleTimerPanel(com.adam.swing_project.timer.core.Timer timer) {
-        SingleTimerPanel singleTimerPanel;
+    public void addSingleTimerPanel(Timer timer) {
+        NewSingleTimerPanel singleTimerPanel;
         if(timer == null) {
-            singleTimerPanel = new SingleTimerPanel(jFrame);
+            singleTimerPanel = new NewSingleTimerPanel(jFrame);
         }  else {
-            singleTimerPanel = new SingleTimerPanel(jFrame, timer);
+            singleTimerPanel = new NewSingleTimerPanel(jFrame, timer);
         }
         singleTimerPanelList.add(singleTimerPanel);
         addSingleTimerPanelInternal(singleTimerPanel);
         timerPanelCount++;
     }
 
-    private void addSingleTimerPanelInternal(SingleTimerPanel singleTimerPanel) {
+    private void addSingleTimerPanelInternal(NewSingleTimerPanel singleTimerPanel) {
         //每行摆3个计时器
         int gridx = timerPanelCount % 3, gridy = timerPanelCount / 3;
         logger.logDebug("add single timer panel [" + gridx + "," + gridy + "]");
@@ -47,15 +48,15 @@ public class TimerPanel extends JPanel {
         add(singleTimerPanel, gridBagConstraints);
     }
 
-    public void removeSingleTimerPanel(SingleTimerPanel singleTimerPanel) {
+    public void removeSingleTimerPanel(NewSingleTimerPanel singleTimerPanel) {
         remove(singleTimerPanel);
         singleTimerPanelList.remove(singleTimerPanel);
         timerPanelCount--;
-        for (SingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
+        for (NewSingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
             remove(singleTimerPanel1);
             timerPanelCount--;
         }
-        for(SingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
+        for(NewSingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
             addSingleTimerPanelInternal(singleTimerPanel1);
             timerPanelCount++;
         }

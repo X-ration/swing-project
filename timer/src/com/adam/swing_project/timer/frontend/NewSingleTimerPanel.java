@@ -1,26 +1,25 @@
-/*package com.adam.swing_project.timer.frontend;
+package com.adam.swing_project.timer.frontend;
 
+import com.adam.swing_project.library.ajswing.AJStatusButton;
+import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.library.datetime.Time;
+import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.timer.newcode.Timer;
 import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.timer.component.*;
 import com.adam.swing_project.timer.helper.TimerStatistic;
-import com.adam.swing_project.library.ajswing.AJStatusButton;
-import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.timer.thread.AudioThread;
-import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.timer.thread.ThreadManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;*/
+import java.awt.event.WindowEvent;
 
 /**
- * 计时器面板前端组件，为了支持多计时器计时独立成类
- * 将单个计时器涉及的JLabel、JButton等封装在一起
+ * 计时器面板前端组件，适配新的Timer类
  */
-/*public class SingleTimerPanel extends JPanel {
+public class NewSingleTimerPanel extends JPanel {
 
     private final JLabel countingLabel, infoLabel;
     private final AJStatusButton timerMainButton, stopButton, editButton, deleteButton;
@@ -34,11 +33,11 @@ import java.awt.event.WindowEvent;*/
         INITIAL, START, PAUSE, STOP_PLAY
     }
 
-    public SingleTimerPanel(JFrame jFrame) {
+    public NewSingleTimerPanel(JFrame jFrame) {
         this(jFrame, new Timer());
     }
 
-    public SingleTimerPanel(JFrame jFrame, Timer timer) {
+    public NewSingleTimerPanel(JFrame jFrame, Timer timer) {
         this.timer = timer;
         this.countingLabel = new JLabel();
         this.infoLabel = new JLabel();
@@ -48,33 +47,6 @@ import java.awt.event.WindowEvent;*/
                 deleteButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
         this.audioThread = ThreadManager.getInstance().getAudioThread();
 
-        switch (timer.getStatus()) {
-            case STOPPED:
-            case USER_STOPPED:
-                //恢复前在计时，但恢复后超过截止时间
-                if(timer.isRestoreCountingDone()) {
-                    timerMainButtonInitialStatus = TimerMainButtonStatus.STOP_PLAY;
-                    audioThread.chooseSoundFile("/audio/Listen.wav");
-                    TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
-                    TimerStatistic.getInstance().recordNaturalCounting(
-                            timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
-                            timer.getResetTime().getHour(), timer.getResetTime().getMinute());
-                }
-                //否则恢复前是停止状态
-                else if(timer.getResetTime().getHour() != 0 || timer.getResetTime().getMinute() != 0) {
-                    timerMainButtonInitialStatus = TimerMainButtonStatus.START;
-                }
-                break;
-            case PAUSED:
-                timerMainButtonInitialStatus = TimerMainButtonStatus.START;
-                stopButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
-                editButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
-                break;
-            case COUNTING:
-                timerMainButtonInitialStatus = TimerMainButtonStatus.PAUSE;
-                stopButtonInitialStatus = AJStatusButtonBinaryStatus.OPEN;
-                editButtonInitialStatus = AJStatusButtonBinaryStatus.CLOSED;
-        }
         this.timerMainButton = new AJStatusButton(TimerMainButtonStatus.class, timerMainButtonInitialStatus);
         this.stopButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, stopButtonInitialStatus);
         this.editButton = new AJStatusButton(AJStatusButtonBinaryStatus.class, editButtonInitialStatus);
@@ -90,11 +62,11 @@ import java.awt.event.WindowEvent;*/
         timerMainButton.bind(TimerMainButtonStatus.START, ajStatusButton -> {
             ajStatusButton.setEnabled(true);
             ajStatusButton.setIcon(IconManager.play24());
-        }, e -> timer.startTimer());
+        }, e -> timer.start());
         timerMainButton.bind(TimerMainButtonStatus.PAUSE, ajStatusButton -> {
             ajStatusButton.setEnabled(true);
             ajStatusButton.setIcon(IconManager.pause24());
-        }, e -> timer.pauseTimer());
+        }, e -> timer.pause());
         timerMainButton.bind(TimerMainButtonStatus.STOP_PLAY, ajStatusButton -> {
             ajStatusButton.setEnabled(true);
             ajStatusButton.setIcon(IconManager.noRecord24());
@@ -104,7 +76,7 @@ import java.awt.event.WindowEvent;*/
         });
         stopButton.setIcon(IconManager.stop24());
         stopButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
-        stopButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> timer.stopTimer());
+        stopButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> timer.stop());
         editButton.setIcon(IconManager.edit24());
         editButton.bind(AJStatusButtonBinaryStatus.OPEN, ajStatusButton -> ajStatusButton.setEnabled(true), e -> showResetTimeDialog());
         editButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
@@ -114,65 +86,65 @@ import java.awt.event.WindowEvent;*/
         }, e -> {
             TimerPanel timerPanel = ApplicationManager.getInstance().getProgramGlobalObject(TimerPanel.class);
             timerPanel.removeSingleTimerPanel(this);
-            timer.terminateTimer();
+            timer.terminate();
         });
         deleteButton.bind(AJStatusButtonBinaryStatus.CLOSED, ajStatusButton -> ajStatusButton.setEnabled(false), e -> {});
-        timer.registerTimerListener(new Timer.TimerListener() {
+
+        timer.addStateChangeListener(((oldStatus, newStatus) -> {
+            switch (newStatus) {
+                case READY:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.START);
+                    stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    deleteButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    syncInfoLabel();
+                    break;
+                case INITIALIZED:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.INITIAL);
+                    stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    deleteButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    syncInfoLabel();
+                    break;
+                case RUNNING:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.PAUSE);
+                    stopButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    editButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    deleteButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    break;
+                case PAUSED:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.START);
+                    break;
+                case STOPPED:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.START);
+                    stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    deleteButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    break;
+                case TIME_UP:
+                    timerMainButton.changeStatus(TimerMainButtonStatus.STOP_PLAY);
+                    stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    editButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+                    deleteButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    //todo stat
+                    audioThread.chooseSoundFile("/audio/Listen.wav");
+                    TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
+                    break;
+            }
+        }));
+        timer.addCountingListener(this::syncCountingLabel);
+        audioThread.registerListener(new AudioThread.AudioControllerListener() {
             @Override
-            public void timerStarted() {
-                syncInfoLabel();
-                syncCountingLabel();
-                timerMainButton.changeStatus(TimerMainButtonStatus.PAUSE);
-                stopButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
-                editButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
+            public void playStopped() {
+                timer.timeUpClear();
             }
 
             @Override
-            public void timerPaused() {
-                timerMainButton.changeStatus(TimerMainButtonStatus.START);
-            }
-
-            @Override
-            public void timerStopped() {
-                syncInfoLabel();
-                syncCountingLabel();
-                timerMainButton.changeStatus(TimerMainButtonStatus.STOP_PLAY);
-                stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
-                editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
-                audioThread.chooseSoundFile("/audio/Listen.wav");
-                TrayIconManager.getInstance().pushMessageToTrayIcon("计时器", "时间到啦！", TrayIcon.MessageType.INFO);
-                int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute();
-                TimerStatistic.getInstance().recordNaturalCounting(
-                        timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
-                        statHour, statMinute);
-            }
-
-            @Override
-            public void timerStoppedByUser() {
-                syncInfoLabel();
-                syncCountingLabel();
-                timerMainButton.changeStatus(TimerMainButtonStatus.START);
-                stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
-                editButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
-                int statHour = timer.getResetTime().getHour(), statMinute = timer.getResetTime().getMinute(),
-                        statSecond = timer.getResetTime().getSecond();
-                TimerStatistic.getInstance().recordUserStoppedCounting(
-                        timer.getStartDate().getYear(), timer.getStartDate().getMonth(), timer.getStartDate().getDay(),
-                        statHour, statMinute, statSecond);
-            }
-
-            @Override
-            public void timerUpdated() {
-                syncInfoLabel();
-                syncCountingLabel();
-            }
-
-            @Override
-            public void timerReset() {
-                timerMainButton.changeStatus(TimerMainButtonStatus.START);
-                syncInfoLabel();
+            public void playPaused() {
             }
         });
+        timer.fireStateChanged();
+        timer.fireCountingUpdated();
 
         infoLabel.setFont(FontManager.getByNameStyleSize("Consolas", Font.PLAIN, 24));
         infoLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -208,59 +180,21 @@ import java.awt.event.WindowEvent;*/
         setBorder(BorderFactory.createEtchedBorder());
     }
 
-    public static void main(String[] args) {
-        Logger.setGlobalLogLevel(Logger.LogLevel.INFO);
-        JFrame jFrame = new JFrame();
-        Container contentPane = jFrame.getContentPane();
-        GridBagLayout gridBagLayout = new GridBagLayout();
-        contentPane.setLayout(gridBagLayout);
-
-        GridBagConstraints gridBagConstraints = new GridBagConstraints(0,0,1,1,1,1,
-                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
-        contentPane.add(new SingleTimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(1,0,1,1,1,1,
-                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
-        contentPane.add(new SingleTimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(0,1,1,1,1,1,
-                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
-        contentPane.add(new SingleTimerPanel(jFrame), gridBagConstraints);
-        gridBagConstraints = new GridBagConstraints(1,1,1,1,1,1,
-                GridBagConstraints.WEST, GridBagConstraints.BOTH, new Insets(5,5,5,5), 0, 0);
-        contentPane.add(new SingleTimerPanel(jFrame), gridBagConstraints);
-
-        jFrame.pack();
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        jFrame.setVisible(true);
-
-        ThreadManager.getInstance().initThreads();
-        jFrame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                ThreadManager.getInstance().destroyThreads();
-                FileManager.getInstance().cleanTempFiles();
-            }
-        });
-    }
-
     public Timer getTimer() {
         return timer;
     }
 
     //内部方法
-    private void syncCountingLabel() {
-        Time countingTime = timer.getCountingTime();
+    private void syncCountingLabel(Time countingTime) {
         countingLabel.setText(DateTimeUtil.wrapTimeHourToSecond(countingTime));
+    }
+    private void syncCountingLabel() {
+        syncCountingLabel(timer.getCountingTime());
     }
     private void syncInfoLabel() {
         StringBuilder sb = new StringBuilder();
-        Time resetTime = timer.getResetTime()
-                , targetTime = timer.getTargetTime()
-                , startTime = timer.getStartTime();
+        Time resetTime = timer.getResetTime();
         sb.append(DateTimeUtil.wrapTimeHourToMinute(resetTime));
-        if(startTime != null && targetTime != null) {
-            sb.append(" (").append(DateTimeUtil.wrapTimeHourToMinute(startTime))
-                    .append("~").append(DateTimeUtil.wrapTimeHourToMinute(targetTime)).append(")");
-        }
         infoLabel.setText(sb.toString());
     }
 
@@ -320,7 +254,7 @@ import java.awt.event.WindowEvent;*/
             if (hour == 0 && minute == 0) {
                 JOptionPane.showMessageDialog(resetTimerDialog, "请检查输入！", "提示", JOptionPane.WARNING_MESSAGE);
             } else {
-                this.timer.resetTimer(hour, minute);
+                this.timer.reset(new Time(hour, minute, 0));
                 resetTimerDialog.dispose();
                 resetTimerDialog.setVisible(false);
             }
@@ -342,4 +276,3 @@ import java.awt.event.WindowEvent;*/
     }
 
 }
-*/

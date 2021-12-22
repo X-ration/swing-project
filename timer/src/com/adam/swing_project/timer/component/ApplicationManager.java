@@ -2,7 +2,7 @@ package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
-import com.adam.swing_project.timer.core.Timer;
+import com.adam.swing_project.library.timer.newcode.Timer;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.timer.helper.TimerStatistic;

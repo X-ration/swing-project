@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class TimerStatistic implements Snapshotable<TimerStatistic> {
+public class TimerStatistic implements Snapshotable {
 
     private static TimerStatistic instance = null;
     private boolean statEnabled = true;
@@ -20,7 +20,7 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
 
     private final Map<String, DayStatistic> statisticMap = new HashMap<>();
 
-    public class DayStatistic implements Snapshotable<DayStatistic>{
+    public class DayStatistic implements Snapshotable{
         private int totalHour;
         private int totalMinute;
         private int totalSecond;
@@ -100,7 +100,7 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
         }
 
         @Override
-        public DayStatistic restoreFromSnapshot(byte[] bytes) {
+        public void restoreFromSnapshot(byte[] bytes) {
             SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
             totalHour = snapshotReader.readInt();
             totalMinute = snapshotReader.readInt();
@@ -111,7 +111,6 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
             userStoppedHour = snapshotReader.readInt();
             userStoppedMinute = snapshotReader.readInt();
             userStoppedSecond = snapshotReader.readInt();
-            return this;
         }
     }
 
@@ -192,7 +191,7 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
     }
 
     @Override
-    public TimerStatistic restoreFromSnapshot(byte[] bytes) {
+    public void restoreFromSnapshot(byte[] bytes) {
         SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
         snapshotReader.readClassTable();
         int size = snapshotReader.readInt();
@@ -203,7 +202,6 @@ public class TimerStatistic implements Snapshotable<TimerStatistic> {
             snapshotReader.readSnapshotableObject(dayStatistic);
             statisticMap.put(mapKey, dayStatistic);
         }
-        return this;
     }
 
     private DayStatistic getOrPut(int year, int month, int day) {

@@ -5,26 +5,20 @@ import com.adam.swing_project.library.datetime.Time;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
+import com.adam.swing_project.library.snapshot.SnapshotManager;
+import com.adam.swing_project.library.snapshot.SnapshotReader;
+import com.adam.swing_project.library.snapshot.SnapshotWriter;
+import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.library.util.DateTimeUtil;
 
-import javax.swing.*;
-import java.awt.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Timer {
+public class Timer implements Snapshotable {
 
     private static final NewTimerThread TIMER_THREAD = new NewTimerThread();
-
-    private final Time countingTime, resetTime;
-    private final NewTimerThread timerThread;
-    private final Logger logger = Logger.createLogger(this);
-    private String timerName;
-    private TimerStatus status;
-    private NewTimerThread.FixedDelayTimerTask timerTask;
-    private final List<CountingListener> countingListenerList = new LinkedList<>();
-    private final List<StateChangeListener> stateChangeListenerList = new LinkedList<>();
 
     static {
         TIMER_THREAD.start();
@@ -34,71 +28,189 @@ public class Timer {
         ManagedShutdownHook.getInstance().registerShutdownHook(priorityShutdownHook);
     }
 
-    enum TimerStatus {
-        INITIALIZED, READY, RUNNING, PAUSED, STOPPED
+    public enum TimerStatus {
+        INITIALIZED, READY, RUNNING, PAUSED, STOPPED, TIME_UP
     }
 
-    interface CountingListener {
+    public interface CountingListener {
         void countingUpdated(Time countingTime);
     }
 
-    interface StateChangeListener {
+    public interface StateChangeListener {
         void stateChanged(TimerStatus oldStatus, TimerStatus newStatus);
+    }
+
+    private final Time countingTime = new Time(0,0,0), resetTime = new Time(0,0,0);
+    private final NewTimerThread timerThread;
+    private final Logger logger = Logger.createLogger(this);
+    private String timerName;
+    private volatile TimerStatus status;
+    private NewTimerThread.FixedDelayTimerTask timerTask;
+    private final int[] pausedTempArray = new int[2];
+    private final List<CountingListener> countingListenerList = new LinkedList<>();
+    private final List<StateChangeListener> stateChangeListenerList = new LinkedList<>();
+    NewTimerThread.TimerTaskAction countingTimeAction = () -> {
+        countingTime.minusSecond();
+        fireCountingUpdated();
+        logger.logDebug("Timer '" + timerName + "' : " + DateTimeUtil.wrapTimeHourToSecond(countingTime) + " at " + System.currentTimeMillis());
+        if (countingTime.getHour() == 0 && countingTime.getMinute() == 0 && countingTime.getSecond() == 0) {
+            logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
+            changeStatus(TimerStatus.TIME_UP);
+        }
+    };
+
+
+    public Timer() {
+        this("Unnamed timer");
     }
 
     public Timer(String timerName) {
         this.timerName = timerName;
-        this.countingTime = new Time(0,0,0);
-        this.resetTime = new Time(0,0,0);
         this.timerThread = TIMER_THREAD;
         this.status = TimerStatus.INITIALIZED;
+        SnapshotManager.getInstance().registerSnapshotable(this);
+    }
+
+
+    @Override
+    public byte[] writeToSnapshot() {
+        SnapshotWriter writer = SnapshotWriter.writer();
+        writer.writeString(timerName);
+        writer.writeInt(status.ordinal());
+
+        switch (status) {
+            case READY:
+            case STOPPED:
+            case TIME_UP:
+                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond());
+                break;
+            case RUNNING:
+                //todo 考虑快照拍摄时冻结action
+                int actionTimeLeft = calcActionTimeLeft(timerTask);
+                long currentTimeMills = System.currentTimeMillis();
+                int startDelayDuration = calcStartDelayDuration(timerTask, currentTimeMills);
+                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond())
+                        .writeInt(countingTime.getHour()).writeInt(countingTime.getMinute()).writeInt(countingTime.getSecond())
+                        .writeInt(actionTimeLeft).writeInt(startDelayDuration).writeLong(currentTimeMills);
+                break;
+            case PAUSED:
+                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond())
+                        .writeInt(countingTime.getHour()).writeInt(countingTime.getMinute()).writeInt(countingTime.getSecond())
+                        .writeInt(pausedTempArray[0]).writeInt(pausedTempArray[1]);
+                break;
+            case INITIALIZED:
+            default:
+                break;
+        }
+
+        return writer.toByteArray();
+    }
+
+    /**
+     * 开发记录：RUNNING状态的经快照恢复后继续运行，会有20ms左右的误差，不过尚在允许范围内
+     * @param bytes
+     */
+    @Override
+    public void restoreFromSnapshot(byte[] bytes) {
+        SnapshotReader reader = SnapshotReader.reader(bytes);
+        timerName = reader.readString();
+        status = TimerStatus.values()[reader.readInt()];
+
+        switch (status) {
+            case READY:
+            case STOPPED:
+            case TIME_UP:
+                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
+                break;
+            case RUNNING:
+                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
+                countingTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
+                int lastActionTimeLeft = reader.readInt();
+                int lastStartDelayDuration = reader.readInt();
+                long lastTimeMills = reader.readLong(), currentTimeMills = System.currentTimeMillis();
+                int diff = (int)(currentTimeMills - lastTimeMills) - lastStartDelayDuration;
+                if(diff < 0) {
+                    startInternal(lastActionTimeLeft, -diff, TimeUnit.MILLISECONDS);
+                } else {
+                    int makeUpTime = 1 + diff / 1000;
+                    if(makeUpTime >= lastActionTimeLeft) {
+                        countingTime.setAllField(0,0,0);
+                        this.status = TimerStatus.TIME_UP;
+                    } else {
+                        for(int i=0;i<makeUpTime;i++) {
+                            this.countingTimeAction.action();
+                        }
+                        startInternal(lastActionTimeLeft - makeUpTime, 1000 - diff % 1000, TimeUnit.MILLISECONDS);
+                    }
+                }
+                break;
+            case PAUSED:
+                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
+                countingTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
+                pausedTempArray[0] = reader.readInt();
+                pausedTempArray[1] = reader.readInt();
+                break;
+            case INITIALIZED:
+            default:
+                break;
+        }
     }
 
     public void start() {
-        requireStatus(TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.PAUSED);
+        requireStatus(TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.PAUSED, TimerStatus.TIME_UP);
         int startDelayDuration;
         TimeUnit startDelayUnit;
         int actionTimeLimit;
-        if(status == TimerStatus.READY || status == TimerStatus.STOPPED) {
+        if(status == TimerStatus.READY || status == TimerStatus.STOPPED || status == TimerStatus.TIME_UP) {
             this.countingTime.copyFrom(this.resetTime);
             fireCountingUpdated();
             startDelayDuration = 1;
             startDelayUnit = TimeUnit.SECONDS;
             actionTimeLimit = (int) DateTimeUtil.translateTimeToSeconds(resetTime);
         } else {
-            actionTimeLimit = timerTask.getActionTimeLimit() - timerTask.getLastActionTime();
-            if(timerTask.getLastActionTime() > 0) {
-                startDelayDuration = (int) (1000 - (timerTask.getCanceledMills() - timerTask.startActionMills()) % 1000);
-            } else {
-                startDelayDuration = (int) (timerTask.startActionMills() - timerTask.getCanceledMills());
-                if(startDelayDuration < 0) {
-                    logger.logWarning("startDelayDuration " + startDelayDuration);
-                    startDelayDuration = 0;
-                }
-            }
+            actionTimeLimit = pausedTempArray[0];
+            startDelayDuration = pausedTempArray[1];
             startDelayUnit = TimeUnit.MILLISECONDS;
         }
-        this.timerTask = timerThread.new FixedDelayTimerTask(actionTimeLimit, startDelayDuration, startDelayUnit, 1, TimeUnit.SECONDS);
-        NewTimerThread.TimerTaskAction countingTimeAction = () -> {
-            countingTime.minusSecond();
-            fireCountingUpdated();
-            logger.logDebug("Timer '" + timerName + "' : " + DateTimeUtil.wrapTimeHourToSecond(countingTime) + " at " + System.currentTimeMillis());
-            if (countingTime.getHour() == 0 && countingTime.getMinute() == 0 && countingTime.getSecond() == 0) {
-//                timerThread.cancelTask(timerTask);  //没必要，执行次数到上限自动退出队列
-                logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
-                changeStatus(TimerStatus.STOPPED);
-            }
-        };
-        timerTask.setTaskName("countingTimeAction for Timer '" + timerName + "'");
-        timerTask.setAction(countingTimeAction);
-        timerThread.addTask(timerTask);
+        startInternal(actionTimeLimit, startDelayDuration, startDelayUnit);
         logger.logDebug("Timer '" + timerName + "' started at " + System.currentTimeMillis());
         changeStatus(TimerStatus.RUNNING);
+    }
+
+    private void startInternal(int actionTimeLimit, int startDelayDuration, TimeUnit startDelayUnit) {
+        this.timerTask = timerThread.new FixedDelayTimerTask(actionTimeLimit, startDelayDuration, startDelayUnit, 1, TimeUnit.SECONDS);
+        timerTask.setTaskName("Timer '" + timerName + "' countingTimeAction");
+        timerTask.setAction(countingTimeAction);
+        timerThread.addTask(timerTask);
+    }
+
+    private int calcActionTimeLeft(NewTimerThread.TimerTask timerTask) {
+        return timerTask.getActionTimeLimit() - timerTask.getLastActionTime();
+    }
+
+    private int calcStartDelayDuration(NewTimerThread.FixedDelayTimerTask timerTask) {
+        return calcStartDelayDuration(timerTask, timerTask.getCanceledMills());
+    }
+
+    private int calcStartDelayDuration(NewTimerThread.FixedDelayTimerTask timerTask, long timeMills) {
+        int startDelayDuration;
+        if(timerTask.getLastActionTime() > 0) {
+            startDelayDuration = (int) (1000 - (timeMills - timerTask.startActionMills()) % 1000);
+        } else {
+            startDelayDuration = (int) (timerTask.startActionMills() - timeMills);
+            if(startDelayDuration < 0) {
+                logger.logWarning("startDelayDuration " + startDelayDuration);
+                startDelayDuration = 0;
+            }
+        }
+        return startDelayDuration;
     }
 
     public void pause() {
         requireStatus(TimerStatus.RUNNING);
         timerThread.cancelTask(this.timerTask);
+        pausedTempArray[0] = calcActionTimeLeft(timerTask);
+        pausedTempArray[1] = calcStartDelayDuration(timerTask);
         logger.logDebug("Timer '" + timerName + "' paused at " + System.currentTimeMillis());
         changeStatus(TimerStatus.PAUSED);
     }
@@ -108,13 +220,35 @@ public class Timer {
         timerTask.setAction(()->{});
         timerThread.cancelTask(timerTask);
         this.countingTime.setAllField(0,0,0);
+        fireCountingUpdated();
         this.timerTask = null;
         logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
         changeStatus(TimerStatus.STOPPED);
     }
 
+    /**
+     * 当TIME_UP对应的事件，例如响铃完成后，调用该方法使状态变成STOPPED。
+     */
+    public void timeUpClear() {
+        requireStatus(TimerStatus.TIME_UP);
+        changeStatus(TimerStatus.STOPPED);
+    }
+
+    public void terminate() {
+        if(timerTask != null) {
+            timerTask.setAction(() -> {});
+            timerThread.cancelTask(timerTask);
+        }
+        this.countingTime.setAllField(0,0,0);
+        fireCountingUpdated();
+        this.timerTask = null;
+        logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
+        changeStatus(TimerStatus.STOPPED);
+        SnapshotManager.getInstance().removeSnapshotable(this);
+    }
+
     public void reset(Time time) {
-        requireStatus(TimerStatus.INITIALIZED, TimerStatus.READY, TimerStatus.STOPPED);
+        requireStatus(TimerStatus.INITIALIZED, TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.TIME_UP);
         Assert.notNull(time);
         Assert.isTrue(time.getHour() >= 0 && time.getMinute() >= 0 && time.getSecond() >= 0, "Invalid param");
         this.resetTime.copyFrom(time);
@@ -125,6 +259,14 @@ public class Timer {
             changeStatus(TimerStatus.READY);
         }
         logger.logDebug("Timer '" + timerName + "' reset to " + DateTimeUtil.wrapTimeHourToSecond(time));
+    }
+
+    public Time getCountingTime() {
+        return countingTime;
+    }
+
+    public Time getResetTime() {
+        return resetTime;
     }
 
     public void addCountingListener(CountingListener countingListener) {
@@ -143,15 +285,13 @@ public class Timer {
                 found = true;
             }
         }
-        Assert.isTrue(found, TimerException.class, "Invalid timer status");
+        Assert.isTrue(found, TimerException.class, "Invalid timer status: actual=" + status + ",required=" + Arrays.toString(statuses));
     }
 
     private void changeStatus(TimerStatus newStatus) {
         TimerStatus oldStatus = this.status;
-        if(oldStatus != newStatus) {
-            this.status = newStatus;
-            fireStateChanged(oldStatus, newStatus);
-        }
+        this.status = newStatus;
+        fireStateChanged(oldStatus, newStatus);
     }
 
     private void fireStateChanged(TimerStatus oldStatus, TimerStatus newStatus) {
@@ -160,7 +300,11 @@ public class Timer {
         }
     }
 
-    private void fireCountingUpdated() {
+    public void fireStateChanged() {
+        fireStateChanged(null, status);
+    }
+
+    public void fireCountingUpdated() {
         Time countingTimeCopy = new Time(0,0,0);
         countingTimeCopy.copyFrom(countingTime);
         for(CountingListener countingListener: countingListenerList) {
@@ -169,9 +313,18 @@ public class Timer {
     }
 
     public static void main(String[] args) {
+        Timer timer1 = new Timer("Timer1"),
+                timer2 = new Timer("Timer2"),
+                timer3 = new Timer("Timer3");
+        timer1.reset(new Time(0,0,30));
+        timer2.reset(new Time(0,0,30));
+        timer3.reset(new Time(0,0,30));
+        timer1.start();
+        timer2.start();
+        timer3.start();
+        /*
         Timer timer = new Timer("MyTimer");
         timer.reset(new Time(0,0,10));
-
         JFrame jFrame = new JFrame();
         Container contentPane = jFrame.getContentPane();
         JPanel jPanel = new JPanel(new GridLayout(1,3));
@@ -231,6 +384,7 @@ public class Timer {
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jFrame.pack();
         jFrame.setVisible(true);
+         */
     }
 
 }
