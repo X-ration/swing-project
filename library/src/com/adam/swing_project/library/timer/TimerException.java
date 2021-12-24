@@ -1,4 +1,4 @@
-package com.adam.swing_project.library.timer.newcode;
+package com.adam.swing_project.library.timer;
 
 public class TimerException extends RuntimeException{
 

@@ -1,4 +1,4 @@
-package com.adam.swing_project.library.timer.newcode;
+package com.adam.swing_project.library.timer;
 
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.datetime.Time;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Timer implements Snapshotable {
 
-    private static final NewTimerThread TIMER_THREAD = new NewTimerThread();
+    private static final TimerThread TIMER_THREAD = new TimerThread();
 
     static {
         TIMER_THREAD.start();
@@ -41,15 +41,15 @@ public class Timer implements Snapshotable {
     }
 
     private final Time countingTime = new Time(0,0,0), resetTime = new Time(0,0,0);
-    private final NewTimerThread timerThread;
+    private final TimerThread timerThread;
     private final Logger logger = Logger.createLogger(this);
     private String timerName;
     private volatile TimerStatus status;
-    private NewTimerThread.FixedDelayTimerTask timerTask;
+    private TimerThread.FixedDelayTimerTask timerTask;
     private final int[] pausedTempArray = new int[2];
     private final List<CountingListener> countingListenerList = new LinkedList<>();
     private final List<StateChangeListener> stateChangeListenerList = new LinkedList<>();
-    NewTimerThread.TimerTaskAction countingTimeAction = () -> {
+    TimerThread.TimerTaskAction countingTimeAction = () -> {
         countingTime.minusSecond();
         fireCountingUpdated();
         logger.logDebug("Timer '" + timerName + "' : " + DateTimeUtil.wrapTimeHourToSecond(countingTime) + " at " + System.currentTimeMillis());
@@ -184,15 +184,15 @@ public class Timer implements Snapshotable {
         timerThread.addTask(timerTask);
     }
 
-    private int calcActionTimeLeft(NewTimerThread.TimerTask timerTask) {
+    private int calcActionTimeLeft(TimerThread.TimerTask timerTask) {
         return timerTask.getActionTimeLimit() - timerTask.getLastActionTime();
     }
 
-    private int calcStartDelayDuration(NewTimerThread.FixedDelayTimerTask timerTask) {
+    private int calcStartDelayDuration(TimerThread.FixedDelayTimerTask timerTask) {
         return calcStartDelayDuration(timerTask, timerTask.getCanceledMills());
     }
 
-    private int calcStartDelayDuration(NewTimerThread.FixedDelayTimerTask timerTask, long timeMills) {
+    private int calcStartDelayDuration(TimerThread.FixedDelayTimerTask timerTask, long timeMills) {
         int startDelayDuration;
         if(timerTask.getLastActionTime() > 0) {
             startDelayDuration = (int) (1000 - (timeMills - timerTask.startActionMills()) % 1000);
@@ -242,7 +242,7 @@ public class Timer implements Snapshotable {
         this.countingTime.setAllField(0,0,0);
         fireCountingUpdated();
         this.timerTask = null;
-        logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
+        logger.logDebug("Timer '" + timerName + "' terminated at " + System.currentTimeMillis());
         changeStatus(TimerStatus.STOPPED);
         SnapshotManager.getInstance().removeSnapshotable(this);
     }

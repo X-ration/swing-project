@@ -31,7 +31,8 @@ public class TimerProgram extends JFrame{
     }
 
     public TimerProgram(TimerAppInfo appInfo) {
-        final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() + " [" + appInfo.getEnv() + "]";
+        final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() +
+                ((appInfo.getEnv() == null) ?  "" : " [" + appInfo.getEnv() + "]");
         //窗体
         JFrame jFrame = new JFrame(titleString);
         Container contentPane = jFrame.getContentPane();
