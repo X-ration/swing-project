@@ -3,6 +3,7 @@ package com.adam.swing_project.timer.component;
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
 import com.adam.swing_project.library.timer.newcode.Timer;
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.timer.helper.TimerStatistic;
@@ -29,7 +30,8 @@ public class ApplicationManager {
 
     public void init() {
         ThreadManager.getInstance().initThreads();
-        String env = ConfigManager.getInstance().getConfig("env");
+        ApplicationArgumentResolver argumentResolver = getProgramGlobalObject(ApplicationArgumentResolver.class);
+        String env = argumentResolver.getOptionValue("env");
         String subDir = "snapshot";
         if(env != null) {
             subDir += ("-" + env);

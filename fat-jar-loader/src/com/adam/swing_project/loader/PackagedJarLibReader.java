@@ -1,8 +1,6 @@
 package com.adam.swing_project.loader;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -62,6 +60,26 @@ public class PackagedJarLibReader extends AbstractFatJarLibReader{
 
     @Override
     protected InputStream readResourceAsStream(String resourceName) throws IOException {
+        if(parent != null) {
+            if(resourceName.equalsIgnoreCase(JarFile.MANIFEST_NAME)) {
+                Manifest manifest = jarFile.getManifest();
+                if(manifest != null) {
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    manifest.write(bos);
+                    logger.logDebug("Found manifest input stream from " + debugGetReaderPath());
+                    return new ByteArrayInputStream(bos.toByteArray());
+                }
+            } else {
+                InputStream inputStream = readResource(resourceName);
+                if (inputStream != null) {
+                    return inputStream;
+                }
+            }
+        }
+        return readResourceNested(resourceName);
+    }
+
+    private InputStream readResource(String resourceName) throws IOException {
         for(String fileEntryName: fileEntryNames) {
             if(fileEntryName.equals(resourceName)) {
                 JarEntry jarEntry = jarFile.getJarEntry(fileEntryName);
@@ -70,19 +88,35 @@ public class PackagedJarLibReader extends AbstractFatJarLibReader{
                 return inputStream;
             }
         }
-        for(String nestedLibEntryName: nestLibEntryNames) {
-            AbstractFatJarLibReader reader = getCachedEntryReader(nestedLibEntryName);
-            if(reader == null) {
-                reader = new NestedJarLibReader
-                        (()->jarFile.getInputStream(jarFile.getJarEntry(nestedLibEntryName)), nestedLibEntryName, this);
-                cacheEntryReader(nestedLibEntryName, reader);
+        return null;
+    }
+
+    private InputStream readResourceNested(String resourceName) throws IOException {
+        if(fatJarEnabled && fatJarAppRootPath != null) {
+            AbstractFatJarLibReader reader = getCachedReader(fatJarLibDir + "/" + fatJarAppRootPath);
+            InputStream inputStream = reader.readResourceAsStream(resourceName);
+            if(inputStream != null) {
+                return inputStream;
             }
+        }
+        for(String nestedLibEntryName: nestLibEntryNames) {
+            AbstractFatJarLibReader reader = getCachedReader(nestedLibEntryName);
             InputStream inputStream = reader.readResourceAsStream(resourceName);
             if(inputStream != null) {
                 return inputStream;
             }
         }
         return null;
+    }
+
+    private AbstractFatJarLibReader getCachedReader(String nestedLibEntryName) throws IOException {
+        AbstractFatJarLibReader reader = getCachedEntryReader(nestedLibEntryName);
+        if(reader == null) {
+            reader = new NestedJarLibReader
+                    (()->jarFile.getInputStream(jarFile.getJarEntry(nestedLibEntryName)), nestedLibEntryName, this);
+            cacheEntryReader(nestedLibEntryName, reader);
+        }
+        return reader;
     }
 
     @Override

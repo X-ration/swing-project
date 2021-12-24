@@ -2,6 +2,7 @@ package com.adam.swing_project.loader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
@@ -9,6 +10,7 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.util.Objects;
 
 /**
  * 支持Fat-jar的类加载器
@@ -61,24 +63,36 @@ public class FatJarClassLoader extends ClassLoader {
         return findClass(name);
     }
 
+    /**
+     * 开发记录：app中的类只能加载app的resource
+     * @param name
+     * @return
+     */
+    @Override
+    public InputStream getResourceAsStream(String name) {
+        Objects.requireNonNull(name);
+        URL url = findResource(name);
+        try {
+            return url != null ? url.openStream() : null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     @Override
     protected URL findResource(String name) {
-        URL url = super.findResource(name);
-        if(url == null) {
-            try {
-                url = new URL(null, "fat-jar:" + name, new URLStreamHandler() {
-                    @Override
-                    protected URLConnection openConnection(URL u) throws IOException {
-                        return new FatJarResourceURLConnection(u, fatJarLibReader);
-                    }
-                });
-            } catch (Exception e) {
-                FatJarClassLoaderException ne = new FatJarClassLoaderException("Reading resource '" + name + "' error");
-                ne.initCause(e);
-                throw ne;
-            }
+        try {
+            return new URL(null, "fat-jar:" + name, new URLStreamHandler() {
+                @Override
+                protected URLConnection openConnection(URL u) throws IOException {
+                    return new FatJarResourceURLConnection(u, fatJarLibReader);
+                }
+            });
+        } catch (Exception e) {
+            FatJarClassLoaderException ne = new FatJarClassLoaderException("Reading resource '" + name + "' error");
+            ne.initCause(e);
+            throw ne;
         }
-        return url;
     }
 
     public String getFatJarRunClassName() {

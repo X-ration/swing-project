@@ -1,8 +1,9 @@
 package com.adam.swing_project.timer;
 
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
+import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
-import com.adam.swing_project.timer.component.ConfigManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.timer.helper.TimerStatistic;
@@ -11,20 +12,28 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
 
     public static void main(String[] args) {
-        ConfigManager.getInstance().loadStartupArgs(args);
-        new TimerProgram();
+        ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
+        ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
+        TimerAppInfo appInfo;
+        try {
+            appInfo = new TimerAppInfo(argumentResolver);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        new TimerProgram(appInfo);
     }
 
-    public TimerProgram() {
-        String version = "1.2.3";
-        String versionInfo =  "Swing计时器 v" + version;
+    public TimerProgram(TimerAppInfo appInfo) {
+        final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() + " [" + appInfo.getEnv() + "]";
         //窗体
-        JFrame jFrame = new JFrame(versionInfo);
+        JFrame jFrame = new JFrame(titleString);
         Container contentPane = jFrame.getContentPane();
         TimerPanel timerPanel = new TimerPanel(jFrame);
         JScrollPane jScrollPane = new JScrollPane(timerPanel);
@@ -95,7 +104,7 @@ public class TimerProgram extends JFrame{
         });
         optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = versionInfo + System.lineSeparator() +
+            String aboutMessage = titleString + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);
@@ -111,7 +120,6 @@ public class TimerProgram extends JFrame{
             @Override
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
-                System.out.println("CLosing");
                 int result;
                 do {
                     result = JOptionPane.showConfirmDialog(jFrame, "您点击了关闭按钮。" + System.lineSeparator() + "是否收起到系统托盘？（程序仍然在后台运行）", "提示", JOptionPane.YES_NO_OPTION,

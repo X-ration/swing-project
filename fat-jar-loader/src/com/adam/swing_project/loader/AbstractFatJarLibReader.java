@@ -15,10 +15,12 @@ public abstract class AbstractFatJarLibReader {
     protected AbstractFatJarLibReader parent;
     protected boolean fatJarEnabled;
     protected String fatJarRunClassName;
+    protected String fatJarAppRootPath;
     protected static final String MANIFEST_FILE_PATH = "/META-INF/MANIFEST.MF";
     protected static final String FAT_JAR_ENABLED = "Fat-Jar-Enabled";
     protected static final String FAT_JAR_LIBRARY_DIR = "Fat-Jar-Lib-Dir";
     protected static final String FAT_JAR_RUN_CLASS_NAME = "Fat-Jar-Run-Class-Name";
+    protected static final String FAT_JAR_APP_ROOT_PATH = "Fat-Jar-App-Root-Path";
 
     protected AbstractFatJarLibReader(AbstractFatJarLibReader parent) {
         this.parent = parent;
@@ -36,22 +38,27 @@ public abstract class AbstractFatJarLibReader {
             throw ne;
         }
         Attributes attributes = manifest.getMainAttributes();
-        String fatJarEnabled = attributes.getValue(FAT_JAR_ENABLED);
+        String fatJarEnabled = resolveManifestProperty(attributes, FAT_JAR_ENABLED, false);
         if(fatJarEnabled == null || !fatJarEnabled.equalsIgnoreCase("TRUE")) {
             logger.logDebug("Fat-Jar not enabled for '" + rootName + "'");
             return;
         }
         this.fatJarEnabled = true;
-        String fatJarLibDir = attributes.getValue(FAT_JAR_LIBRARY_DIR);
-        if(fatJarLibDir == null || fatJarLibDir.equals("")) {
-            throw new FatJarLibReaderException(FAT_JAR_LIBRARY_DIR + " required");
-        }
-        this.fatJarLibDir = fatJarLibDir;
-        logger.logDebug("Resolved " + FAT_JAR_LIBRARY_DIR + "=" + fatJarLibDir + " for '" + rootName + "'");
-        String fatJarRunClassName = attributes.getValue(FAT_JAR_RUN_CLASS_NAME);
-        if(fatJarRunClassName != null && !fatJarRunClassName.equals("")) {
-            this.fatJarRunClassName = fatJarRunClassName;
-            logger.logDebug("Resolved " + FAT_JAR_RUN_CLASS_NAME + "=" + fatJarRunClassName + " for '" + rootName + "'");
+        this.fatJarLibDir = resolveManifestProperty(attributes, FAT_JAR_LIBRARY_DIR, true);
+        this.fatJarRunClassName = resolveManifestProperty(attributes, FAT_JAR_RUN_CLASS_NAME, false);
+        this.fatJarAppRootPath = resolveManifestProperty(attributes, FAT_JAR_APP_ROOT_PATH, false);
+    }
+
+    private String resolveManifestProperty(Attributes attributes, String name, boolean required) {
+        String value = attributes.getValue(name);
+        LoaderAssert.isTrue(!required || (value != null && !value.equals("")), FatJarLibReaderException.class, "Manifest attribute '" + name + "' required");
+        if(value != null && !value.equals("")) {
+            if(logger.debugEnabled()) {
+                logger.logDebug("Resolved manifest attribute '" + name + "=" + value + "' + for '" + rootName + "'");
+            }
+            return value;
+        } else {
+            return null;
         }
     }
 
