@@ -29,7 +29,7 @@ public class Timer implements Snapshotable {
     }
 
     public enum TimerStatus {
-        INITIALIZED, READY, RUNNING, PAUSED, STOPPED, TIME_UP
+        INITIALIZED, READY, RUNNING, PAUSED, STOPPED, TIME_UP, TERMINATED
     }
 
     public interface CountingListener {
@@ -243,7 +243,7 @@ public class Timer implements Snapshotable {
         fireCountingUpdated();
         this.timerTask = null;
         logger.logDebug("Timer '" + timerName + "' terminated at " + System.currentTimeMillis());
-        changeStatus(TimerStatus.STOPPED);
+        changeStatus(TimerStatus.TERMINATED);
         SnapshotManager.getInstance().removeSnapshotable(this);
     }
 

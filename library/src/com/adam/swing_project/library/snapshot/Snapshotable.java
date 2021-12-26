@@ -2,7 +2,7 @@ package com.adam.swing_project.library.snapshot;
 
 
 /**
- * 快照化接口
+ * 基础快照对象类型
  * @param <T>
  */
 public interface Snapshotable{

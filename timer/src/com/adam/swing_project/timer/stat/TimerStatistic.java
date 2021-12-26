@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.helper;
+package com.adam.swing_project.timer.stat;
 
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.assertion.Assert;
@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 计划移除该类的统计功能，不过该类可以作为序列化自定义类型功能的示例
+ */
+@Deprecated
 public class TimerStatistic implements Snapshotable {
 
     private static TimerStatistic instance = null;
@@ -179,29 +183,30 @@ public class TimerStatistic implements Snapshotable {
 
     @Override
     public byte[] writeToSnapshot() {
-        Set<Map.Entry<String, DayStatistic>> entrySet = statisticMap.entrySet();
-        SnapshotWriter snapshotWriter = SnapshotWriter.writer(new Class[]{DayStatistic.class});
-        snapshotWriter.writeClassTable();
-        snapshotWriter.writeInt(entrySet.size());
-        for(Map.Entry<String, DayStatistic> entry: entrySet) {
-            snapshotWriter.writeString(entry.getKey());
-            snapshotWriter.writeSnapshotableObject(entry.getValue());
-        }
-        return snapshotWriter.toByteArray();
+//        Set<Map.Entry<String, DayStatistic>> entrySet = statisticMap.entrySet();
+//        SnapshotWriter snapshotWriter = SnapshotWriter.writer(new Class[]{DayStatistic.class});
+//        snapshotWriter.writeClassTable();
+//        snapshotWriter.writeInt(entrySet.size());
+//        for(Map.Entry<String, DayStatistic> entry: entrySet) {
+//            snapshotWriter.writeString(entry.getKey());
+//            snapshotWriter.writeSnapshotableObject(entry.getValue());
+//        }
+//        return snapshotWriter.toByteArray();
+        return new byte[0];
     }
 
     @Override
     public void restoreFromSnapshot(byte[] bytes) {
-        SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
-        snapshotReader.readClassTable();
-        int size = snapshotReader.readInt();
-        Assert.isTrue(size>=0);
-        for(int i=0;i<size;i++) {
-            String mapKey = snapshotReader.readString();
-            DayStatistic dayStatistic = new DayStatistic();
-            snapshotReader.readSnapshotableObject(dayStatistic);
-            statisticMap.put(mapKey, dayStatistic);
-        }
+//        SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
+//        snapshotReader.readClassTable();
+//        int size = snapshotReader.readInt();
+//        Assert.isTrue(size>=0);
+//        for(int i=0;i<size;i++) {
+//            String mapKey = snapshotReader.readString();
+//            DayStatistic dayStatistic = new DayStatistic();
+//            snapshotReader.readSnapshotableObject(dayStatistic);
+//            statisticMap.put(mapKey, dayStatistic);
+//        }
     }
 
     private DayStatistic getOrPut(int year, int month, int day) {

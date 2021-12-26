@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class SnapshotReader {
 
@@ -56,6 +58,17 @@ public class SnapshotReader {
         this.objectClassArray = classArray;
     }
 
+    private void requireTypeInternal(byte typeRead, byte... types) {
+        int index = -1;
+        for(int i = 0;i<types.length;i++) {
+            if(types[i] == typeRead) {
+                index = i;
+            }
+        }
+        Assert.isTrue(index != -1, "错误的序列化类型，预期=[" + Arrays.toString(types) + "],实际=" + typeRead);
+    }
+
+    @Deprecated
     private void requireType(byte type) throws ReadEndException{
         readAFewBytes(1);
         Assert.isTrue(buffer[0] == type, "错误的序列化类型，预期=" + type + ",实际=" + buffer[0]);
@@ -66,11 +79,10 @@ public class SnapshotReader {
         try {
             readAFewBytes(prefaceArray.length);
         } catch (ReadEndException e) {
-            e.printStackTrace();
             throw new SnapshotException(e);
         }
         for(int i=0;i<prefaceArray.length;i++) {
-            Assert.isTrue(buffer[i] == prefaceArray[i], "读取的序言非法！");
+            Assert.isTrue(buffer[i] == prefaceArray[i], SnapshotException.class, "读取的序言非法！");
         }
         return SnapshotConstants.SNAPSHOT_FILE_PREFACE;
     }
@@ -83,7 +95,7 @@ public class SnapshotReader {
                 classArray[i] = Class.forName(classNameArray[i]);
             }
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new SnapshotException(e);
         }
         this.objectClassArray = classArray;
         return classArray;
@@ -92,44 +104,36 @@ public class SnapshotReader {
     public int readInt() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_INT);
+            return readIntInternal();
         } catch (ReadEndException e) {
-            e.printStackTrace();
             throw new SnapshotException(e);
         }
-        return readIntInternal();
     }
 
     public long readLong() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_LONG);
+            return readLongInternal();
         } catch (ReadEndException e) {
-            e.printStackTrace();
             throw new SnapshotException(e);
         }
-        return readLongInternal();
     }
 
     public byte readByte() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_BYTE);
+            return readByteInternal();
         } catch (ReadEndException e) {
-            e.printStackTrace();
             throw new SnapshotException(e);
         }
-        return readByteInternal();
     }
 
     public String readString() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_STRING);
-        } catch (ReadEndException e) {
-            e.printStackTrace();
-            throw new SnapshotException(e);
-        }
-        int length = readIntInternal();
-        Assert.isTrue(length > 0, "非法的长度值");
-        byte[] strBytes;
-        try {
+            int length = readIntInternal();
+            Assert.isTrue(length > 0, "非法的长度值");
+            byte[] strBytes;
             if (length <= BUFFER_SIZE) {
                 readAFewBytes(length);
                 strBytes = new byte[length];
@@ -137,106 +141,106 @@ public class SnapshotReader {
             } else {
                 strBytes = readMoreBytes(length);
             }
+            return new String(strBytes, StandardCharsets.UTF_8);
         } catch (ReadEndException e) {
-            e.printStackTrace();
             throw new SnapshotException(e);
         }
-        return new String(strBytes, StandardCharsets.UTF_8);
     }
 
     public String[] readStringArray() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_ARRAY_STRING);
+            int arrayLength = readIntInternal();
+            String[] sArray = new String[arrayLength];
+            for(int i=0;i<arrayLength;i++) {
+                sArray[i] = readString();
+            }
+            return sArray;
         } catch (ReadEndException e) {
             e.printStackTrace();
             throw new SnapshotException(e);
         }
-        int arrayLength = readIntInternal();
-        String[] sArray = new String[arrayLength];
-        for(int i=0;i<arrayLength;i++) {
-            sArray[i] = readString();
-        }
-        return sArray;
     }
 
-    public Snapshotable readSnapshotableObject() {
-        return readSnapshotableObject(null);
-    }
+//    public Snapshotable readSnapshotableObject() {
+//        return readSnapshotableObject(null);
+//    }
 
     /**
      * 适应使用内部类的情况，由根对象生成内部类实例后传递给方法参数
-     * @param object
      * @return
      */
-    public Snapshotable readSnapshotableObject(Snapshotable object) {
+    //todo 异常处理优化
+    public Snapshotable readSnapshotableObject() {
+//    public Snapshotable readSnapshotableObject(Snapshotable object) {
+        byte typeRead;
+        String instantiationMethodName = null;
         try {
-            requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT);
+            typeRead = readByteInternal();
+            requireTypeInternal(typeRead, SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT, SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION);
         } catch (ReadEndException e) {
             return null;
         }
-        int classIndex = readIntInternal();
-        Assert.isTrue(classIndex >= 0 && classIndex < objectClassArray.length, "类型索引超出界限！");
-        if(object == null) {
-            Class objectClass = objectClassArray[classIndex];
-            Assert.isTrue(Snapshotable.class.isAssignableFrom(objectClass));
-            try {
+
+        try {
+            if (typeRead == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION) {
+                instantiationMethodName = readString();
+            }
+
+            int classIndex = readIntInternal();
+            Assert.isTrue(classIndex >= 0 && classIndex < objectClassArray.length, "类型索引超出界限！");
+            Assert.isTrue(Snapshotable.class.isAssignableFrom(objectClassArray[classIndex]));
+            Class<Snapshotable> objectClass = objectClassArray[classIndex];
+
+            Snapshotable object;
+            if (typeRead == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION) {
+                Method method = objectClass.getDeclaredMethod(instantiationMethodName, null);
+                object = (Snapshotable) method.invoke(null, null);
+            } else {
                 Constructor<Snapshotable> constructor = objectClass.getDeclaredConstructor(null);
                 constructor.setAccessible(true);
                 object = constructor.newInstance(null);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                e.printStackTrace();
-                return null;
             }
-        }
-        int objectLength = readIntInternal();
-        byte[] objectData;
-        try {
-            if (objectLength <= BUFFER_SIZE) {
+
+            int objectLength = readIntInternal();
+            byte[] objectData;
+            if (objectLength == 0) {
+                objectData = new byte[0];
+            }
+            else if(objectLength > 0 && objectLength <= BUFFER_SIZE) {
                 readAFewBytes(objectLength);
                 objectData = new byte[objectLength];
                 System.arraycopy(buffer, 0, objectData, 0, objectLength);
-            } else {
+            } else if(objectLength > BUFFER_SIZE) {
                 objectData = readMoreBytes(objectLength);
+            } else {
+                throw new SnapshotException("Negative object length: " + objectLength);
             }
-        } catch (ReadEndException e) {
-           return null;
+
+            object.restoreFromSnapshot(objectData);
+            return object;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ReadEndException e) {
+            throw new SnapshotException(e);
         }
-        object.restoreFromSnapshot(objectData);
-        return object;
     }
 
 
-    private int readIntInternal() {
-        try {
-            readAFewBytes(4);
-        } catch (ReadEndException e) {
-            e.printStackTrace();
-            throw new SnapshotException(e);
-        }
+    private int readIntInternal() throws ReadEndException {
+        readAFewBytes(4);
         return (((int)buffer[0] & 0xFF) << 24) | (((int)buffer[1] & 0xFF) << 16) |
                 (((int)buffer[2] & 0xFF) << 8) | (((int)buffer[3] & 0xFF));
     }
 
-    private long readLongInternal() {
-        try {
-            readAFewBytes(8);
-        } catch (ReadEndException e) {
-            e.printStackTrace();
-            throw new SnapshotException(e);
-        }
+    private long readLongInternal() throws ReadEndException {
+        readAFewBytes(8);
         return (((long)buffer[0] & 0xFF) << 56) | (((long)buffer[1] & 0xFF) << 48) |
                 (((long)buffer[2] & 0xFF) << 40) | (((long)buffer[3] & 0xFF) << 32) |
                 (((long)buffer[4] & 0xFF) << 24) | (((long)buffer[5] & 0xFF) << 16) |
                 (((long)buffer[6] & 0xFF) << 8) | (((long)buffer[7] & 0xFF));
     }
 
-    private byte readByteInternal() {
-        try {
-            readAFewBytes(1);
-        } catch (ReadEndException e) {
-            e.printStackTrace();
-            throw new SnapshotException(e);
-        }
+    private byte readByteInternal() throws ReadEndException {
+        readAFewBytes(1);
         return buffer[0];
     }
 
@@ -247,23 +251,24 @@ public class SnapshotReader {
      */
     private int readAFewBytes(int nBytes) throws ReadEndException{
         Assert.notNull(inputStream);
-        Assert.isTrue(nBytes <= BUFFER_SIZE, "读取字节数超过上限！");
+        Assert.isTrue(nBytes >= 0, SnapshotException.class, "读取字节数非法！");
+        Assert.isTrue(nBytes <= BUFFER_SIZE, SnapshotException.class, "读取字节数超过上限！");
+        if(nBytes == 0) return 0;
         try {
             int nBytesRead = inputStream.read(buffer, 0, nBytes);
             if(nBytesRead == -1)
                 throw new ReadEndException();
-            Assert.isTrue(nBytes == nBytesRead, "读取的字节数不符，预期=" + nBytes + ",实际=" + nBytesRead);
+            Assert.isTrue(nBytes == nBytesRead, SnapshotException.class, "读取的字节数不符，预期=" + nBytes + ",实际=" + nBytesRead);
             return nBytesRead;
         } catch (IOException e) {
-            e.printStackTrace();
-            return -1;
+            throw new SnapshotException(e);
         }
     }
 
     //fix read snapshot error
     private byte[] readMoreBytes(int nBytes) throws ReadEndException{
         Assert.notNull(inputStream);
-        Assert.isTrue(nBytes > BUFFER_SIZE, "读取字节数过少！");
+        Assert.isTrue(nBytes > BUFFER_SIZE, SnapshotException.class, "读取字节数过少！");
         byte[] byteArray = new byte[nBytes];
         int totalBytesRead = 0, bytesRead = 0;
         try {
@@ -275,11 +280,11 @@ public class SnapshotReader {
                 remainingBytes -= bytesRead;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new SnapshotException(e);
         }
         if(totalBytesRead == 0)
             throw new ReadEndException();
-        Assert.isTrue(totalBytesRead == nBytes, "读取的字节数不符，预期=" + nBytes + ",实际=" + totalBytesRead);
+        Assert.isTrue(totalBytesRead == nBytes, SnapshotException.class, "读取的字节数不符，预期=" + nBytes + ",实际=" + totalBytesRead);
         return byteArray;
     }
 

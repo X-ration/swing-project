@@ -6,7 +6,7 @@ import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.helper.TimerStatistic;
+import com.adam.swing_project.timer.stat.TimerStatistic;
 
 import javax.swing.*;
 import java.awt.*;

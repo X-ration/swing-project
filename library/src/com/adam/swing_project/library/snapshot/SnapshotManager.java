@@ -125,16 +125,7 @@ public class SnapshotManager {
     }
 
     public static void main(String[] args) {
-//        SnapshotManager snapshotManager = SnapshotManager.getInstance();
-//        Test1 test1 = new Test1();
-//        test1.name = "刘明";
-//        test1.age = 34;
-//        snapshotManager.registerSnapshotable(test1);
-//        Snapshot snapshot = snapshotManager.generateSnapshot();
-//        List<Snapshotable> objects = snapshotManager.readSnapshot(snapshot);
-//        System.out.println(objects);
-//        Snapshot[] snapshots = snapshotManager.scanSnapshot();
-//        Arrays.sort(snapshots);
-//        System.out.println(snapshots);
+
+
     }
 }

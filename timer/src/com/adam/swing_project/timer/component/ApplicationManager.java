@@ -6,7 +6,7 @@ import com.adam.swing_project.library.timer.Timer;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.library.logger.Logger;
-import com.adam.swing_project.timer.helper.TimerStatistic;
+import com.adam.swing_project.timer.stat.TimerStatistic;
 import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.timer.thread.ThreadManager;

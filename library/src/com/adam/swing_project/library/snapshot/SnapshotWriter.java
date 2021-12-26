@@ -99,7 +99,12 @@ public class SnapshotWriter {
     public SnapshotWriter writeSnapshotableObject(Snapshotable snapshotable) {
         int classIndex = findObjectClassIndex(snapshotable);
         Assert.isTrue(classIndex != -1, "该类型未注册！");
-        writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT);
+        if(snapshotable instanceof CustomInstantiationSnapshotable) {
+            writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION);
+            writeString(((CustomInstantiationSnapshotable) snapshotable).instantiationMethodName());
+        } else {
+            writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT);
+        }
         writeIntInternal(classIndex);
         byte[] objBytes = snapshotable.writeToSnapshot();
         writeIntInternal(objBytes.length);
