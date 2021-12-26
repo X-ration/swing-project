@@ -9,6 +9,8 @@ import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.SnapshotReader;
 import com.adam.swing_project.library.snapshot.SnapshotWriter;
 import com.adam.swing_project.library.snapshot.Snapshotable;
+import com.adam.swing_project.library.timer.action_log.ActionLog;
+import com.adam.swing_project.library.timer.action_log.ActionLogManager;
 import com.adam.swing_project.library.util.DateTimeUtil;
 
 import java.util.Arrays;
@@ -55,6 +57,7 @@ public class Timer implements Snapshotable {
         logger.logDebug("Timer '" + timerName + "' : " + DateTimeUtil.wrapTimeHourToSecond(countingTime) + " at " + System.currentTimeMillis());
         if (countingTime.getHour() == 0 && countingTime.getMinute() == 0 && countingTime.getSecond() == 0) {
             logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
+            addActionLog(ActionLog.ActionLogType.TIMER_TIME_UP);
             changeStatus(TimerStatus.TIME_UP);
         }
     };
@@ -69,6 +72,8 @@ public class Timer implements Snapshotable {
         this.timerThread = TIMER_THREAD;
         this.status = TimerStatus.INITIALIZED;
         SnapshotManager.getInstance().registerSnapshotable(this);
+        //这里记日志会受到持久化影响多记日志，而且INITIALIZE类型对于统计没有作用
+//        addActionLog(ActionLog.ActionLogType.TIMER_INITIALIZE);
     }
 
 
@@ -158,6 +163,7 @@ public class Timer implements Snapshotable {
 
     public void start() {
         requireStatus(TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.PAUSED, TimerStatus.TIME_UP);
+        addActionLog(ActionLog.ActionLogType.TIMER_START);
         int startDelayDuration;
         TimeUnit startDelayUnit;
         int actionTimeLimit;
@@ -208,6 +214,7 @@ public class Timer implements Snapshotable {
 
     public void pause() {
         requireStatus(TimerStatus.RUNNING);
+        addActionLog(ActionLog.ActionLogType.TIMER_PAUSE);
         timerThread.cancelTask(this.timerTask);
         pausedTempArray[0] = calcActionTimeLeft(timerTask);
         pausedTempArray[1] = calcStartDelayDuration(timerTask);
@@ -217,6 +224,7 @@ public class Timer implements Snapshotable {
 
     public void stop() {
         requireStatus(TimerStatus.RUNNING, TimerStatus.PAUSED);
+        addActionLog(ActionLog.ActionLogType.TIMER_STOP);
         timerTask.setAction(()->{});
         timerThread.cancelTask(timerTask);
         this.countingTime.setAllField(0,0,0);
@@ -235,6 +243,9 @@ public class Timer implements Snapshotable {
     }
 
     public void terminate() {
+        if(status == TimerStatus.TERMINATED)
+            return;
+        addActionLog(ActionLog.ActionLogType.TIMER_TERMINATE);
         if(timerTask != null) {
             timerTask.setAction(() -> {});
             timerThread.cancelTask(timerTask);
@@ -251,6 +262,7 @@ public class Timer implements Snapshotable {
         requireStatus(TimerStatus.INITIALIZED, TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.TIME_UP);
         Assert.notNull(time);
         Assert.isTrue(time.getHour() >= 0 && time.getMinute() >= 0 && time.getSecond() >= 0, "Invalid param");
+        addActionLog(ActionLog.ActionLogType.TIMER_RESET);
         this.resetTime.copyFrom(time);
         this.countingTime.setAllField(0,0,0);
         if(time.getHour() == 0 && time.getMinute() == 0 && time.getSecond() == 0) {
@@ -286,6 +298,14 @@ public class Timer implements Snapshotable {
             }
         }
         Assert.isTrue(found, TimerException.class, "Invalid timer status: actual=" + status + ",required=" + Arrays.toString(statuses));
+    }
+
+    private void addActionLog(ActionLog.ActionLogType actionLogType) {
+        Time resetTime = new Time(0,0,0), countingTime = new Time(0,0,0);
+        resetTime.copyFrom(this.resetTime);
+        countingTime.copyFrom(this.countingTime);
+        ActionLog actionLog = new ActionLog(actionLogType, timerName, countingTime, resetTime);
+        ActionLogManager.getInstance().addActionLog(actionLog);
     }
 
     private void changeStatus(TimerStatus newStatus) {

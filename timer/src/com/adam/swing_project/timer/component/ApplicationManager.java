@@ -57,7 +57,7 @@ public class ApplicationManager {
                 }
             }
         }
-        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
+//        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
     }
 
     public void close() {
