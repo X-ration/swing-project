@@ -20,12 +20,13 @@ import java.util.Enumeration;
 /**
  * 控制音频播放的主类
  * main方法是一个简单的播放器软件实现（支持wav格式）
+ * //todo 终止方法有问题，可能需要重构
  */
 public class AudioThread extends Thread {
 
     private final Object lock = new Object()
             , playLock = new Object();
-    private AudioControllerStatus status = AudioControllerStatus.STOPPED;
+    private volatile AudioControllerStatus status = AudioControllerStatus.STOPPED;
     private final Logger logger = Logger.createLogger(this);
 
     private File soundFile;
@@ -201,7 +202,8 @@ public class AudioThread extends Thread {
      * 终止控制器线程,外部调用
      */
     public void terminate() {
-        stopPlay();
+        //todo 注释掉stop方法，避免发生死锁等待，后期回顾决定是否优化代码
+//        stopPlay();
         status = AudioControllerStatus.TERMINATING;
         wakeup();
     }
