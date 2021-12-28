@@ -24,7 +24,15 @@ public class ActionLog implements Snapshotable {
     private ActionLog() {}
 
     public ActionLog(ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime) {
-        this.utilDate = new java.util.Date();
+        this(actionLogType, new java.util.Date(), timerName, countingTime, resetTime);
+    }
+
+    public ActionLog(ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime, long timeMills) {
+        this(actionLogType, new java.util.Date(timeMills), timerName, countingTime, resetTime);
+    }
+
+    public ActionLog(ActionLogType actionLogType, java.util.Date utilDate, String timerName, Time countingTime, Time resetTime) {
+        this.utilDate = utilDate;
         this.date = new Date(utilDate);
         this.actionLogType = actionLogType;
         this.timerName = timerName;

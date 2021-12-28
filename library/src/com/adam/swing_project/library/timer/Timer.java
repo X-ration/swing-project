@@ -141,6 +141,7 @@ public class Timer implements Snapshotable {
                     if(makeUpTime >= lastActionTimeLeft) {
                         countingTime.setAllField(0,0,0);
                         this.status = TimerStatus.TIME_UP;
+                        addActionLog(ActionLog.ActionLogType.TIMER_TIME_UP, lastTimeMills + 1000 - diff % 1000 + lastActionTimeLeft * 1000L);
                     } else {
                         for(int i=0;i<makeUpTime;i++) {
                             this.countingTimeAction.action();
@@ -305,6 +306,14 @@ public class Timer implements Snapshotable {
         resetTime.copyFrom(this.resetTime);
         countingTime.copyFrom(this.countingTime);
         ActionLog actionLog = new ActionLog(actionLogType, timerName, countingTime, resetTime);
+        ActionLogManager.getInstance().addActionLog(actionLog);
+    }
+
+    private void addActionLog(ActionLog.ActionLogType actionLogType, long timeMills) {
+        Time resetTime = new Time(0,0,0), countingTime = new Time(0,0,0);
+        resetTime.copyFrom(this.resetTime);
+        countingTime.copyFrom(this.countingTime);
+        ActionLog actionLog = new ActionLog(actionLogType, timerName, countingTime, resetTime, timeMills);
         ActionLogManager.getInstance().addActionLog(actionLog);
     }
 
