@@ -2,10 +2,11 @@ package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
-import com.adam.swing_project.timer.core.Timer;
+import com.adam.swing_project.library.timer.Timer;
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
 import com.adam.swing_project.library.logger.Logger;
-import com.adam.swing_project.timer.helper.TimerStatistic;
+import com.adam.swing_project.timer.stat.TimerStatistic;
 import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.timer.thread.ThreadManager;
@@ -29,7 +30,8 @@ public class ApplicationManager {
 
     public void init() {
         ThreadManager.getInstance().initThreads();
-        String env = ConfigManager.getInstance().getConfig("env");
+        ApplicationArgumentResolver argumentResolver = getProgramGlobalObject(ApplicationArgumentResolver.class);
+        String env = argumentResolver.getOptionValue("env");
         String subDir = "snapshot";
         if(env != null) {
             subDir += ("-" + env);
@@ -55,7 +57,7 @@ public class ApplicationManager {
                 }
             }
         }
-        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
+//        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
     }
 
     public void close() {

@@ -23,7 +23,7 @@ public class Assert {
     public static void isTrue(boolean exp, Class<? extends RuntimeException> exceptionClass, String msg) {
         if(!exp) {
             try {
-                Constructor constructor = exceptionClass.getConstructor(String.class);
+                Constructor constructor = exceptionClass.getDeclaredConstructor(String.class);
                 RuntimeException exception = (RuntimeException) constructor.newInstance(msg);
                 throw exception;
             } catch (NoSuchMethodException e) {

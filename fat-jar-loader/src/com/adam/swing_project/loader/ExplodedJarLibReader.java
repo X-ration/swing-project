@@ -63,6 +63,13 @@ public class ExplodedJarLibReader extends AbstractFatJarLibReader {
 
     @Override
     protected InputStream readResourceAsStream(String resourceName) throws IOException {
+        if(fatJarEnabled && fatJarAppRootPath != null) {
+            AbstractFatJarLibReader reader = getCachedReader(fatJarAppRootPath);
+            InputStream inputStream = reader.readResourceAsStream(resourceName);
+            if(inputStream != null) {
+                return inputStream;
+            }
+        }
         for(String fatJarFileName: libFileNames) {
             AbstractFatJarLibReader reader = getCachedReader(fatJarFileName);
             InputStream inputStream = reader.readResourceAsStream(resourceName);

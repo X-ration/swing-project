@@ -1,5 +1,7 @@
 package com.adam.swing_project.library.datetime;
 
+import java.util.Objects;
+
 public class Time implements Copyable<Time>{
     private int hour;
     private int minute;
@@ -39,6 +41,7 @@ public class Time implements Copyable<Time>{
         this.second = second;
     }
 
+    //todo 迁移到util
     public void addSecond() {
         if(second < 59) {
             second++;
@@ -74,5 +77,18 @@ public class Time implements Copyable<Time>{
     @Override
     public void copyFrom(Time another) {
         setAllField(another.hour, another.minute, another.second);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Time time = (Time) o;
+        return hour == time.hour && minute == time.minute && second == time.second;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(hour, minute, second);
     }
 }

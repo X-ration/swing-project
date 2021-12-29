@@ -38,6 +38,7 @@ public class SnapshotManager {
      */
     public void registerSnapshotable(Snapshotable snapshotable) {
         this.snapshotableList.add(snapshotable);
+        logger.logDebug("Registered Snapshotable object '" + snapshotable + "'");
     }
 
     /**
@@ -46,6 +47,7 @@ public class SnapshotManager {
      */
     public void removeSnapshotable(Snapshotable snapshotable) {
         this.snapshotableList.remove(snapshotable);
+        logger.logDebug("Removed Snapshotable object '" + snapshotable + "'");
     }
 
     public Snapshot generateSnapshot() {
@@ -122,35 +124,8 @@ public class SnapshotManager {
         return snapshotableList;
     }
 
-    static class Test1 implements Snapshotable<Test1> {
-        private String name;
-        private int age;
-
-        @Override
-        public byte[] writeToSnapshot() {
-            return SnapshotWriter.writer().writeString(name).writeInt(age).toByteArray();
-        }
-
-        @Override
-        public Test1 restoreFromSnapshot(byte[] bytes) {
-            SnapshotReader snapshotReader = new SnapshotReader(bytes);
-            this.name = snapshotReader.readString();
-            this.age = snapshotReader.readInt();
-            return this;
-        }
-    }
-
     public static void main(String[] args) {
-        SnapshotManager snapshotManager = SnapshotManager.getInstance();
-        Test1 test1 = new Test1();
-        test1.name = "刘明";
-        test1.age = 34;
-        snapshotManager.registerSnapshotable(test1);
-        Snapshot snapshot = snapshotManager.generateSnapshot();
-        List<Snapshotable> objects = snapshotManager.readSnapshot(snapshot);
-        System.out.println(objects);
-        Snapshot[] snapshots = snapshotManager.scanSnapshot();
-        Arrays.sort(snapshots);
-        System.out.println(snapshots);
+
+
     }
 }

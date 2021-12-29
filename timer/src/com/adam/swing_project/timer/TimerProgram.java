@@ -1,30 +1,43 @@
 package com.adam.swing_project.timer;
 
-import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.datetime.Date;
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
+import com.adam.swing_project.library.util.DateTimeUtil;
+import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
-import com.adam.swing_project.timer.component.ConfigManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.helper.TimerStatistic;
+import com.adam.swing_project.timer.stat.ActionLogDayStatistic;
+import com.adam.swing_project.timer.stat.ActionLogStatistic;
+import com.adam.swing_project.timer.stat.TimerStatistic;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 
 public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
 
     public static void main(String[] args) {
-        ConfigManager.getInstance().loadStartupArgs(args);
-        new TimerProgram();
+        ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
+        ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
+        TimerAppInfo appInfo;
+        try {
+            appInfo = new TimerAppInfo(argumentResolver);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        new TimerProgram(appInfo);
     }
 
-    public TimerProgram() {
-        String version = "1.2.3";
-        String versionInfo =  "Swing计时器 v" + version;
+    public TimerProgram(TimerAppInfo appInfo) {
+        final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() +
+                ((appInfo.getEnv() == null) ?  "" : " [" + appInfo.getEnv() + "]");
         //窗体
-        JFrame jFrame = new JFrame(versionInfo);
+        JFrame jFrame = new JFrame(titleString);
         Container contentPane = jFrame.getContentPane();
         TimerPanel timerPanel = new TimerPanel(jFrame);
         JScrollPane jScrollPane = new JScrollPane(timerPanel);
@@ -43,7 +56,7 @@ public class TimerProgram extends JFrame{
         JMenuItem fileNewTimerItem = new JMenuItem("新建计时器(N)"),
                 fileStatisticItem = new JMenuItem("统计数据(S)"),
                 helpAboutItem = new JMenuItem("关于(A)");
-        JCheckBoxMenuItem optionStatItem = new JCheckBoxMenuItem("启用统计");
+        JCheckBoxMenuItem optionStatItem = new JCheckBoxMenuItem("启用统计(待开发)");
         jMenuBar.add(fileMenu);
         jMenuBar.add(optionMenu);
         jMenuBar.add(helpMenu);
@@ -63,39 +76,28 @@ public class TimerProgram extends JFrame{
             jFrame.revalidate();
         });
         fileStatisticItem.addActionListener(e -> {
-            Object[] statistic = TimerStatistic.getInstance().getDayStatistic(3);
-            Assert.isTrue(statistic.length % 2 == 0, "统计数据非法！");
-            StringBuilder sb = new StringBuilder();
-            sb.append("计时器统计数据").append(System.lineSeparator()).append(System.lineSeparator());
-            for(int i=0;i<statistic.length;i++) {
-                String date = (String) statistic[i++];
-                sb.append(date).append(' ');
-                TimerStatistic.DayStatistic dayStatistic = (TimerStatistic.DayStatistic) statistic[i];
-                if(dayStatistic == null) {
-                    sb.append("暂无数据");
-                } else {
-                    sb.append("总时长 ").append(dayStatistic.getTotalStatistic());
-                    //今日详细数据
-                    if(i==1) {
-                        sb.append(System.lineSeparator());
-                        for(int j=0;j<date.length();j++) {
-                            sb.append(" ");
-                        }
-                        sb.append(" 自然计时总时长 ").append(dayStatistic.getNaturalStatistic());
-                        sb.append(System.lineSeparator());
-                        for(int j=0;j<date.length();j++) {
-                            sb.append(" ");
-                        }
-                        sb.append(" 用户中断总时长 ").append(dayStatistic.getUserStoppedStatistic());
-                    }
-                }
-                sb.append(System.lineSeparator());
+            Date[] dates = new Date[2];
+            dates[0] = DateTimeUtil.getCurrentDate();
+            dates[1] = DateTimeUtil.datePlusDay(dates[0], -1);
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("计时器统计数据").append(System.lineSeparator());
+            for (int i = 0; i < 20; i++) {
+                stringBuilder.append("-");
             }
-            JOptionPane.showMessageDialog(jFrame, sb.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
+            stringBuilder.append(System.lineSeparator());
+            for(Date date: dates) {
+                ActionLogDayStatistic dayStatistic = ActionLogStatistic.getInstance().getDayStatistic(date);
+                String dateString = DateTimeUtil.wrapDateYearToDay(date);
+                stringBuilder.append(dateString).append(System.lineSeparator()).append("计划计时").append("  ")
+                        .append(DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalResetTime())).append(System.lineSeparator());
+                stringBuilder.append("实际计时").append("  ")
+                        .append(DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalCountedTime())).append(System.lineSeparator());
+            }
+            JOptionPane.showMessageDialog(jFrame, stringBuilder.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
         });
         optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
         helpAboutItem.addActionListener(e -> {
-            String aboutMessage = versionInfo + System.lineSeparator() +
+            String aboutMessage = titleString + System.lineSeparator() +
                     System.lineSeparator() +
                     "图标来源：https://icons8.com";
             JOptionPane.showMessageDialog(jFrame, aboutMessage, "关于计时器", JOptionPane.INFORMATION_MESSAGE);
@@ -111,7 +113,6 @@ public class TimerProgram extends JFrame{
             @Override
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
-                System.out.println("CLosing");
                 int result;
                 do {
                     result = JOptionPane.showConfirmDialog(jFrame, "您点击了关闭按钮。" + System.lineSeparator() + "是否收起到系统托盘？（程序仍然在后台运行）", "提示", JOptionPane.YES_NO_OPTION,

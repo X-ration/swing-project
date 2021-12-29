@@ -8,7 +8,7 @@ public class SnapshotConstants {
     public static final String SNAPSHOT_FILE_PREFACE = "SnapshotManager of swing-timer" + System.lineSeparator();
 
     /**
-     * 原始类型
+     * 原始类型, 由于数组掩码的存在，最多支持2^7=128种序列化类型
      */
     public static final byte SNAPSHOT_UNIT_TYPE_BOOLEAN = 0;
     public static final byte SNAPSHOT_UNIT_TYPE_BYTE = 1;
@@ -24,6 +24,7 @@ public class SnapshotConstants {
      */
     public static final byte SNAPSHOT_UNIT_TYPE_STRING = 8;
     public static final byte SNAPSHOT_UNIT_TYPE_OBJECT = 9;
+    public static final byte SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION = 10;
 
     /**
      * 数组类型掩码

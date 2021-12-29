@@ -1,6 +1,7 @@
 package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.timer.Timer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,7 +27,7 @@ public class TimerPanel extends JPanel {
         addSingleTimerPanel(null);
     }
 
-    public void addSingleTimerPanel(com.adam.swing_project.timer.core.Timer timer) {
+    public void addSingleTimerPanel(Timer timer) {
         SingleTimerPanel singleTimerPanel;
         if(timer == null) {
             singleTimerPanel = new SingleTimerPanel(jFrame);
