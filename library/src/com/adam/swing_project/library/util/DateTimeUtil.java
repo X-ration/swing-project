@@ -70,6 +70,17 @@ public class DateTimeUtil {
         return result;
     }
 
+    public static java.util.Date translateDateTimeToUtilDate(Date date, Time time) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, date.getYear());
+        calendar.set(Calendar.MONTH, date.getMonth() - 1);
+        calendar.set(Calendar.DAY_OF_MONTH, date.getDay());
+        calendar.set(Calendar.HOUR_OF_DAY, time.getHour());
+        calendar.set(Calendar.MINUTE, time.getMinute());
+        calendar.set(Calendar.SECOND, time.getSecond());
+        return calendar.getTime();
+    }
+
     public static String wrapDateYearToDay(Date date) {
         int year = date.getYear(), month = date.getMonth(), day = date.getDay();
         return year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
@@ -96,9 +107,9 @@ public class DateTimeUtil {
     }
 
     public static void main(String[] args) {
-        Date date = getCurrentDate();
-        Date date1 = datePlusDay(date, -1);
-        System.out.println(date);
+        Date date = new Date(2000,1,1);
+        Time time = new Time(99,99,99);
+        java.util.Date date1 = translateDateTimeToUtilDate(date, time);
         System.out.println(date1);
     }
 }

@@ -1,11 +1,16 @@
 package com.adam.swing_project.library.snapshot;
 
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.datetime.Date;
+import com.adam.swing_project.library.datetime.Time;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.library.util.JdkDateTimeUtil;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +21,7 @@ public class SnapshotManager {
     private final Logger logger = Logger.createLogger(this);
     private final List<Snapshotable> snapshotableList = new ArrayList<>();
     private File snapshotDir;
-
+    private static final Pattern SNAPSHOT_FILE_NAME_PATTERN = Pattern.compile("snapshot-(\\d{4})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})\\.dat");
 
     private SnapshotManager() {
     }
@@ -67,7 +72,9 @@ public class SnapshotManager {
             e.printStackTrace();
         }
         logger.logInfo("成功写入了" + snapshotableList.size() + "个对象数据");
-        return new Snapshot(snapShotFile);
+        Date currentDate = DateTimeUtil.getCurrentDate();
+        Time currentTime = DateTimeUtil.getCurrentTime();
+        return new Snapshot(snapShotFile, currentDate, currentTime);
     }
 
     private Class[] collectSnapshotableClassName() {
@@ -83,11 +90,49 @@ public class SnapshotManager {
         List<Snapshot> snapshotList = new LinkedList<>();
         for(File file: files) {
             String fileName = file.getName();
-            if(fileName.startsWith("snapshot-") && fileName.endsWith(".dat")) {
-                snapshotList.add(new Snapshot(file));
+            Matcher matcher = SNAPSHOT_FILE_NAME_PATTERN.matcher(fileName);
+            if(matcher.matches()) {
+                try {
+                    int year = Integer.parseInt(matcher.group(1))
+                            , month = Integer.parseInt(matcher.group(2))
+                            , day = Integer.parseInt(matcher.group(3))
+                            , hour = Integer.parseInt(matcher.group(4))
+                            , minute = Integer.parseInt(matcher.group(5))
+                            , second = Integer.parseInt(matcher.group(6));
+                    Date captureDate = new Date(year, month, day);
+                    Time captureTime = new Time(hour, minute, second);
+                    snapshotList.add(new Snapshot(file, captureDate, captureTime));
+                } catch (NumberFormatException e) {
+                    logger.logWarning("Invalid snapshot file: " + fileName);
+                }
             }
         }
         return snapshotList.toArray(new Snapshot[0]);
+    }
+
+    public boolean deleteSnapshot(Snapshot snapshot) {
+        return snapshot.getSnapshotFile().delete();
+    }
+
+    /**
+     * 清理快照文件，按照时间顺序保留最近的reserveNum个文件
+     * @param reserveNum 要保留的快照文件数，0为全部清理
+     * @return
+     */
+    public synchronized boolean clearSnapshot(int reserveNum) {
+        Assert.isTrue(reserveNum >= 0, "Invalid param");
+        Snapshot[] snapshots = scanSnapshot();
+        Arrays.sort(snapshots);
+        if(snapshots.length <= reserveNum) {
+            logger.logInfo("clearSnapshot skipped operation: total=" + snapshots.length + " reserveNum=" + reserveNum);
+            return true;
+        }
+        int deleteNum = snapshots.length - reserveNum;
+        for(int i=0;i<deleteNum;i++) {
+            deleteSnapshot(snapshots[i]);
+        }
+        logger.logInfo("clearSnapshot finished: " + deleteNum + " of " + snapshots.length + " cleared");
+        return false;
     }
 
     /**
@@ -104,7 +149,6 @@ public class SnapshotManager {
         }
     }
 
-    //todo 考虑单例模式的情况，用构造器构造可能导致单例模式问题
     public List<Snapshotable> readSnapshot(Snapshot snapshot) {
         logger.logInfo("开始读取快照文件" + snapshot.getSnapshotFile().getPath());
         List<Snapshotable> snapshotableList = new LinkedList<>();
@@ -125,7 +169,27 @@ public class SnapshotManager {
     }
 
     public static void main(String[] args) {
+        String[] names = {
+                "snapshot",
+                "snapshot-2020-01-02-12-20-20.dat"
+        };
+        for(String name: names) {
+            Matcher matcher = SNAPSHOT_FILE_NAME_PATTERN.matcher(name);
+            System.out.println("name '" + name + "' matches? " + (matcher.matches()? "yes" : "no"));
+            if(matcher.matches()) {
+                int year = Integer.parseInt(matcher.group(1));
+                int month = Integer.parseInt(matcher.group(2));
+                int day = Integer.parseInt(matcher.group(3));
+                int hour = Integer.parseInt(matcher.group(4));
+                int minute = Integer.parseInt(matcher.group(5));
+                int second = Integer.parseInt(matcher.group(6));
+                System.out.println("Resolved group: " + year + month + day + hour + minute + second);
+            }
+        }
 
-
+        SnapshotManager.getInstance().setSnapshotDir(new File("C:\\Users\\Adam\\swing-timer\\snapshot-dev"));
+        Snapshot[] snapshots = SnapshotManager.getInstance().scanSnapshot();
+//        Arrays.stream(snapshots).forEach(snapshot -> System.out.println(snapshot.getSnapshotFile().getName()));
+        SnapshotManager.getInstance().clearSnapshot(0);
     }
 }
