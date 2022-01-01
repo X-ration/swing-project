@@ -20,7 +20,6 @@ import java.util.Enumeration;
 /**
  * 控制音频播放的主类
  * main方法是一个简单的播放器软件实现（支持wav格式）
- * //todo 终止方法有问题，可能需要重构
  */
 public class AudioThread extends Thread {
 

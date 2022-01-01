@@ -26,6 +26,7 @@ public class TimerProgram extends JFrame{
         TimerAppInfo appInfo;
         try {
             appInfo = new TimerAppInfo(argumentResolver);
+            ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -36,6 +37,7 @@ public class TimerProgram extends JFrame{
     public TimerProgram(TimerAppInfo appInfo) {
         final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() +
                 ((appInfo.getEnv() == null) ?  "" : " [" + appInfo.getEnv() + "]");
+        appInfo.setTitleString(titleString);
         //窗体
         JFrame jFrame = new JFrame(titleString);
         Container contentPane = jFrame.getContentPane();

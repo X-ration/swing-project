@@ -274,6 +274,15 @@ public class Timer implements Snapshotable {
         logger.logDebug("Timer '" + timerName + "' reset to " + DateTimeUtil.wrapTimeHourToSecond(time));
     }
 
+    public void setTimerName(String timerName) {
+        logger.logDebug("Timer '" + this.timerName + "' rename to '" + timerName + "'");
+        this.timerName = timerName;
+    }
+
+    public String getTimerName() {
+        return timerName;
+    }
+
     public Time getCountingTime() {
         return countingTime;
     }

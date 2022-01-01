@@ -8,6 +8,7 @@ import java.io.IOException;
 public class TimerAppInfo extends ManifestAppInfo {
 
     private final String env;
+    private String titleString;
 
     public TimerAppInfo(ApplicationArgumentResolver argumentResolver) throws IOException {
         super();
@@ -16,5 +17,13 @@ public class TimerAppInfo extends ManifestAppInfo {
 
     public String getEnv() {
         return env;
+    }
+
+    public void setTitleString(String titleString) {
+        this.titleString = titleString;
+    }
+
+    public String getTitleString() {
+        return titleString;
     }
 }

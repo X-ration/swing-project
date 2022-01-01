@@ -170,7 +170,6 @@ public class SnapshotReader {
      * 适应使用内部类的情况，由根对象生成内部类实例后传递给方法参数
      * @return
      */
-    //todo 异常处理优化
     public Snapshotable readSnapshotableObject() {
 //    public Snapshotable readSnapshotableObject(Snapshotable object) {
         byte typeRead;
