@@ -178,14 +178,19 @@ public class StatisticDialog extends JDialog {
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             JButton jButton = new JButton((String) value);
             jButton.setFont(jButton.getFont().deriveFont(Font.PLAIN));
-            ButtonActionListener actionListener = new ButtonActionListener(table, jButton, row);
-            jButton.addActionListener(actionListener);
-            table.getModel().addTableModelListener(e -> {
-                if(e.getType() == TableModelEvent.UPDATE && e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE
-                        && e.getColumn() == TableModelEvent.ALL_COLUMNS) {
-                    actionListener.reset();
-                }
-            });
+            String dateString = (String) table.getModel().getValueAt(row, 0);
+            if(DateTimeUtil.getCurrentDate().equals(DateTimeUtil.unwrapDateYearToDay(dateString))) {
+                jButton.setEnabled(false);
+            } else {
+                ButtonActionListener actionListener = new ButtonActionListener(table, jButton, row);
+                jButton.addActionListener(actionListener);
+                table.getModel().addTableModelListener(e -> {
+                    if (e.getType() == TableModelEvent.UPDATE && e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE
+                            && e.getColumn() == TableModelEvent.ALL_COLUMNS) {
+                        actionListener.reset();
+                    }
+                });
+            }
             return jButton;
         }
 
@@ -205,6 +210,10 @@ public class StatisticDialog extends JDialog {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JButton jButton = new JButton((String) value);
             jButton.setFont(jButton.getFont().deriveFont(Font.PLAIN));
+            String dateString = (String) table.getModel().getValueAt(row, 0);
+            if(DateTimeUtil.getCurrentDate().equals(DateTimeUtil.unwrapDateYearToDay(dateString))) {
+                jButton.setEnabled(false);
+            }
             return jButton;
         }
     }

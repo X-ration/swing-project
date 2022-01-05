@@ -44,7 +44,9 @@ public class ActionLogStatistic implements CustomInstantiationSnapshotable {
             return dayStatisticMap.get(date);
         }
         ActionLogDayStatistic dayStatistic = new ActionLogDayStatistic(date, getDetailedActionLogByDate(date));
-        dayStatisticMap.put(date, dayStatistic);
+        if(!DateTimeUtil.getCurrentDate().equals(date)) {
+            dayStatisticMap.put(date, dayStatistic);
+        }
         return dayStatistic;
     }
 
