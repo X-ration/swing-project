@@ -1,11 +1,17 @@
 package com.adam.swing_project.library.util;
 
+import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.datetime.Time;
 
 import java.util.Calendar;
+import java.util.regex.Pattern;
 
 public class DateTimeUtil {
+
+    public static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-[01]\\d-[0-3]\\d")
+            , TIME_PATTERN = Pattern.compile("\\d{2}:[0-5]\\d:[0-5]\\d");
+
     public static Time getCurrentTime() {
         Calendar calendar = Calendar.getInstance();
         return new Time(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE),
@@ -84,6 +90,25 @@ public class DateTimeUtil {
     public static String wrapDateYearToDay(Date date) {
         int year = date.getYear(), month = date.getMonth(), day = date.getDay();
         return year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
+    }
+
+    public static Date unwrapDateYearToDay(String dateString) {
+        Assert.isTrue(DATE_PATTERN.matcher(dateString).matches(), "Invalid date string: " + dateString);
+        String[] splits = dateString.split("-");
+        int year = Integer.parseInt(splits[0]);
+        int month = Integer.parseInt(splits[1]);
+        int day = Integer.parseInt(splits[2]);
+        Assert.isTrue(month >= 1 && month <= 12 && day >= 1 && day <= 31, "Invalid date string: " + dateString);
+        return new Date(year, month, day);
+    }
+
+    public static Time unwrapTimeHourToSecond(String timeString) {
+        Assert.isTrue(TIME_PATTERN.matcher(timeString).matches(), "Invalid time string: " + timeString);
+        String[] splits = timeString.split(":");
+        int hour = Integer.parseInt(splits[0]);
+        int minute = Integer.parseInt(splits[1]);
+        int second = Integer.parseInt(splits[2]);
+        return new Time(hour, minute, second);
     }
 
     public static String wrapTimeHourToSecond(Time time) {
