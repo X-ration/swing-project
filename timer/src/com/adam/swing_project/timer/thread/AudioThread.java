@@ -42,9 +42,9 @@ public class AudioThread extends Thread {
         TERMINATING
     }
 
-    public interface AudioControllerListener {
-        void playStopped();
-        void playPaused();
+    public abstract class AudioControllerListener {
+        public abstract void playStopped();
+        public abstract void playPaused();
     }
 
     AudioThread() {
@@ -211,6 +211,10 @@ public class AudioThread extends Thread {
         listenerList.add(listener);
     }
 
+    public void clearListener() {
+        listenerList.clear();
+    }
+
     private void playPaused() {
         sourceDataLine.stop();
         for(AudioControllerListener listener: listenerList) {
@@ -299,7 +303,7 @@ public class AudioThread extends Thread {
             audioThread.stopPlay();
         });
 
-        audioThread.registerListener(new AudioControllerListener() {
+        audioThread.registerListener(audioThread.new AudioControllerListener() {
             @Override
             public void playStopped() {
                 play.setEnabled(true);

@@ -125,6 +125,16 @@ public class SingleTimerPanel extends JPanel {
                     stopButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                     editButton.changeStatus(AJStatusButtonBinaryStatus.CLOSED);
                     deleteButton.changeStatus(AJStatusButtonBinaryStatus.OPEN);
+                    audioThread.clearListener();
+                    audioThread.registerListener(audioThread.new AudioControllerListener() {
+                        @Override
+                        public void playStopped() {
+                            timer.timeUpClear();
+                        }
+                        @Override
+                        public void playPaused() {
+                        }
+                    });
                     audioThread.chooseSoundFile("/audio/Listen.wav");
                     TimerAppInfo timerAppInfo = ApplicationManager.getInstance().getProgramGlobalObject(TimerAppInfo.class);
                     String trayMessageTitle = timerAppInfo.getTitleString(), trayMessageBody = timer.getTimerName() + " (" + DateTimeUtil.wrapTimeHourToSecond(timer.getResetTime()) + ") 时间到啦！";
@@ -133,16 +143,7 @@ public class SingleTimerPanel extends JPanel {
             }
         }));
         timer.addCountingListener(this::syncCountingLabel);
-        audioThread.registerListener(new AudioThread.AudioControllerListener() {
-            @Override
-            public void playStopped() {
-                timer.timeUpClear();
-            }
 
-            @Override
-            public void playPaused() {
-            }
-        });
         timer.fireStateChanged();
         timer.fireCountingUpdated();
 
@@ -276,6 +277,7 @@ public class SingleTimerPanel extends JPanel {
             }
             this.timer.reset(new Time(hour, minute, 0));
             this.timer.setTimerName(timerName);
+            syncInfoLabelGroup();
             resetTimerDialog.dispose();
             resetTimerDialog.setVisible(false);
         });

@@ -54,11 +54,11 @@ public class TimerPanel extends JPanel {
         timerPanelCount--;
         for (SingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
             remove(singleTimerPanel1);
-            timerPanelCount--;
+//            timerPanelCount--;
         }
         for(SingleTimerPanel singleTimerPanel1: singleTimerPanelList) {
             addSingleTimerPanelInternal(singleTimerPanel1);
-            timerPanelCount++;
+//            timerPanelCount++;
         }
         //TimerPanel被包裹在JScrollPane中，所以要获取父容器重绘
         getParent().revalidate();
