@@ -317,6 +317,7 @@ public class SingleTimerPanel extends JPanel {
         dialogContentPane.add(buttonPanel, BorderLayout.SOUTH);
 
         resetTimerDialog.pack();
+        resetTimerDialog.setLocationRelativeTo(parentJFrame);
         resetTimerDialog.setVisible(true);
     }
 
