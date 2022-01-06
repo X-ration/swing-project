@@ -38,6 +38,8 @@ public class ApplicationManager {
         }
         File snapshotDir = FileManager.getInstance().requireSubDir(subDir);
         SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
+        //只保留最近的3个快照文件
+        SnapshotManager.getInstance().clearSnapshot(3);
 
         List<Snapshotable> snapshotableList = SnapshotManager.getInstance().readLastSnapshot();
         PriorityShutdownHook shutdownHook = new PriorityShutdownHook() {
@@ -57,7 +59,6 @@ public class ApplicationManager {
                 }
             }
         }
-//        SnapshotManager.getInstance().registerSnapshotable(TimerStatistic.getInstance());
     }
 
     public void close() {

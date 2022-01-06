@@ -207,9 +207,7 @@ public class TimerThread extends Thread{
     public void terminate() {
         terminateSign = true;
         logger.logDebug("sets terminate sign");
-        synchronized (notEmptyLock) {
-            notEmptyLock.notify();
-        }
+        this.interrupt();
     }
 
     /**

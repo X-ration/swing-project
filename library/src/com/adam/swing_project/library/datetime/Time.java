@@ -2,7 +2,7 @@ package com.adam.swing_project.library.datetime;
 
 import java.util.Objects;
 
-public class Time implements Copyable<Time>{
+public class Time implements Copyable<Time>, Comparable<Time>{
     private int hour;
     private int minute;
     private int second;
@@ -77,6 +77,17 @@ public class Time implements Copyable<Time>{
     @Override
     public void copyFrom(Time another) {
         setAllField(another.hour, another.minute, another.second);
+    }
+
+    @Override
+    public int compareTo(Time o) {
+        int cmp = Integer.compare(hour, o.hour);
+        if(cmp != 0)
+            return cmp;
+        cmp = Integer.compare(minute, o.minute);
+        if(cmp != 0)
+            return cmp;
+        return Integer.compare(second, o.second);
     }
 
     @Override

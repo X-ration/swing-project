@@ -15,6 +15,14 @@ public class ActionLogDayStatistic {
     private final Date date;
     private final Time totalResetTime, totalCountedTime;
 
+    public ActionLogDayStatistic(Date date, Time totalResetTime, Time totalCountedTime) {
+        this.date = date;
+        this.totalResetTime = new Time(0,0,0);
+        this.totalCountedTime = new Time(0,0,0);
+        this.totalResetTime.copyFrom(totalResetTime);
+        this.totalCountedTime.copyFrom(totalCountedTime);
+    }
+
     public ActionLogDayStatistic(Date date, Collection<ActionLog> actionLogs) {
         Assert.notNull(date);
         Assert.notNull(actionLogs);

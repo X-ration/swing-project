@@ -1,14 +1,11 @@
 package com.adam.swing_project.timer;
 
-import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
-import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
+import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.stat.ActionLogDayStatistic;
-import com.adam.swing_project.timer.stat.ActionLogStatistic;
 import com.adam.swing_project.timer.stat.TimerStatistic;
 
 import javax.swing.*;
@@ -26,6 +23,7 @@ public class TimerProgram extends JFrame{
         TimerAppInfo appInfo;
         try {
             appInfo = new TimerAppInfo(argumentResolver);
+            ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -36,6 +34,7 @@ public class TimerProgram extends JFrame{
     public TimerProgram(TimerAppInfo appInfo) {
         final String titleString = appInfo.getAppName() + " " + appInfo.getAppVersion() +
                 ((appInfo.getEnv() == null) ?  "" : " [" + appInfo.getEnv() + "]");
+        appInfo.setTitleString(titleString);
         //窗体
         JFrame jFrame = new JFrame(titleString);
         Container contentPane = jFrame.getContentPane();
@@ -75,26 +74,7 @@ public class TimerProgram extends JFrame{
             timerPanel.addSingleTimerPanel();
             jFrame.revalidate();
         });
-        fileStatisticItem.addActionListener(e -> {
-            Date[] dates = new Date[2];
-            dates[0] = DateTimeUtil.getCurrentDate();
-            dates[1] = DateTimeUtil.datePlusDay(dates[0], -1);
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("计时器统计数据").append(System.lineSeparator());
-            for (int i = 0; i < 20; i++) {
-                stringBuilder.append("-");
-            }
-            stringBuilder.append(System.lineSeparator());
-            for(Date date: dates) {
-                ActionLogDayStatistic dayStatistic = ActionLogStatistic.getInstance().getDayStatistic(date);
-                String dateString = DateTimeUtil.wrapDateYearToDay(date);
-                stringBuilder.append(dateString).append(System.lineSeparator()).append("计划计时").append("  ")
-                        .append(DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalResetTime())).append(System.lineSeparator());
-                stringBuilder.append("实际计时").append("  ")
-                        .append(DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalCountedTime())).append(System.lineSeparator());
-            }
-            JOptionPane.showMessageDialog(jFrame, stringBuilder.toString(), "统计数据", JOptionPane.INFORMATION_MESSAGE);
-        });
+        fileStatisticItem.addActionListener(e -> showStatisticDialog(jFrame));
         optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
         helpAboutItem.addActionListener(e -> {
             String aboutMessage = titleString + System.lineSeparator() +
@@ -109,6 +89,7 @@ public class TimerProgram extends JFrame{
         jFrame.setSize(400, 300);
         jFrame.setMinimumSize(new Dimension(400, 300));
         jFrame.setVisible(true);
+        jFrame.setLocation(450, 230);
         jFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -131,6 +112,11 @@ public class TimerProgram extends JFrame{
                 } while (result == JOptionPane.CLOSED_OPTION);
             }
         });
+    }
+
+    private void showStatisticDialog(JFrame jFrame) {
+        StatisticDialog dialog = new StatisticDialog(jFrame);
+        dialog.setVisible(true);
     }
 
 }

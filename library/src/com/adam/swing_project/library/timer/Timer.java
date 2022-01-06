@@ -239,6 +239,9 @@ public class Timer implements Snapshotable {
      * 当TIME_UP对应的事件，例如响铃完成后，调用该方法使状态变成STOPPED。
      */
     public void timeUpClear() {
+        if(status == TimerStatus.TERMINATED) {
+            return;
+        }
         requireStatus(TimerStatus.TIME_UP);
         changeStatus(TimerStatus.STOPPED);
     }
@@ -257,6 +260,8 @@ public class Timer implements Snapshotable {
         logger.logDebug("Timer '" + timerName + "' terminated at " + System.currentTimeMillis());
         changeStatus(TimerStatus.TERMINATED);
         SnapshotManager.getInstance().removeSnapshotable(this);
+        countingListenerList.clear();
+        stateChangeListenerList.clear();
     }
 
     public void reset(Time time) {
@@ -272,6 +277,15 @@ public class Timer implements Snapshotable {
             changeStatus(TimerStatus.READY);
         }
         logger.logDebug("Timer '" + timerName + "' reset to " + DateTimeUtil.wrapTimeHourToSecond(time));
+    }
+
+    public void setTimerName(String timerName) {
+        logger.logDebug("Timer '" + this.timerName + "' rename to '" + timerName + "'");
+        this.timerName = timerName;
+    }
+
+    public String getTimerName() {
+        return timerName;
     }
 
     public Time getCountingTime() {
