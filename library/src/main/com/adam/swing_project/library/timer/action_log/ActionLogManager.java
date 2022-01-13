@@ -1,7 +1,9 @@
 package com.adam.swing_project.library.timer.action_log;
 
 import com.adam.swing_project.library.datetime.Date;
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.snapshot.*;
 
 import java.io.File;
@@ -14,7 +16,7 @@ import java.util.*;
 public class ActionLogManager implements CustomInstantiationSnapshotable {
 
     private static final ActionLogManager instance = new ActionLogManager();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private final Deque<ActionLog> actionLogQueue = new LinkedList<>();
     private final Collection<Date> actionLogDateCollection = new LinkedList<>();
 

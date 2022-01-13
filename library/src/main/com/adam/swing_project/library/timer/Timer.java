@@ -2,7 +2,9 @@ package com.adam.swing_project.library.timer;
 
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.datetime.Time;
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
 import com.adam.swing_project.library.snapshot.SnapshotManager;
@@ -44,7 +46,7 @@ public class Timer implements Snapshotable {
 
     private final Time countingTime = new Time(0,0,0), resetTime = new Time(0,0,0);
     private final TimerThread timerThread;
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private String timerName;
     private volatile TimerStatus status;
     private TimerThread.FixedDelayTimerTask timerTask;

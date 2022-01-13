@@ -1,14 +1,16 @@
 package com.adam.swing_project.library.util;
 
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ApplicationArgumentResolver {
 
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private final Map<String, String> resolvedMap = new HashMap<>();
     public static final String ARGUMENT_RESOLVER_LOG_LEVEL = "argumentResolverLogLevel";
 

@@ -2,8 +2,9 @@ package com.adam.swing_project.timer.thread;
 
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.assertion.AssertException;
-import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
+import com.adam.swing_project.timer.component.FileManager;
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -26,7 +27,7 @@ public class AudioThread extends Thread {
     private final Object lock = new Object()
             , playLock = new Object();
     private volatile AudioControllerStatus status = AudioControllerStatus.STOPPED;
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     private File soundFile;
     private AudioInputStream audioInputStream;

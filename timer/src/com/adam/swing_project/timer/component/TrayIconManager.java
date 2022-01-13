@@ -1,6 +1,7 @@
 package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +17,7 @@ public class TrayIconManager {
     private JFrame jFrame;
     private TrayIcon trayIcon;
     private final boolean isSupportSystemTray = SystemTray.isSupported();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     public static TrayIconManager getInstance() {
         return instance;

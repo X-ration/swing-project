@@ -4,10 +4,14 @@ import com.adam.swing_project.library.ajswing.AJStatusButton;
 import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.library.datetime.Time;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.timer.Timer;
 import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
-import com.adam.swing_project.timer.component.*;
+import com.adam.swing_project.timer.component.ApplicationManager;
+import com.adam.swing_project.timer.component.FontManager;
+import com.adam.swing_project.timer.component.IconManager;
+import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.thread.AudioThread;
 import com.adam.swing_project.timer.thread.ThreadManager;
 
@@ -25,7 +29,7 @@ public class SingleTimerPanel extends JPanel {
 
     private final Timer timer;
     private final AudioThread audioThread;
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     public enum TimerMainButtonStatus {
         INITIAL, START, PAUSE, STOP_PLAY

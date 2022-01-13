@@ -1,7 +1,8 @@
 package com.adam.swing_project.timer.stat;
 
-import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.snapshot.SnapshotReader;
 import com.adam.swing_project.library.snapshot.SnapshotWriter;
 import com.adam.swing_project.library.snapshot.Snapshotable;
@@ -10,7 +11,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 计划移除该类的统计功能，不过该类可以作为序列化自定义类型功能的示例
@@ -20,7 +20,7 @@ public class TimerStatistic implements Snapshotable {
 
     private static TimerStatistic instance = null;
     private boolean statEnabled = true;
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     private final Map<String, DayStatistic> statisticMap = new HashMap<>();
 

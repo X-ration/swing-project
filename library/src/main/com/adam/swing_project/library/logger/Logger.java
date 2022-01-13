@@ -1,12 +1,14 @@
 package com.adam.swing_project.library.logger;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
  * 日志类
  */
-public class Logger {
+public abstract class Logger {
 
     private final Object object;
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -17,12 +19,8 @@ public class Logger {
         DEBUG, INFO, WARNING, ERROR
     }
 
-    private Logger(Object object) {
+    protected Logger(Object object) {
         this.object = object;
-    }
-
-    public static Logger createLogger(Object object) {
-        return new Logger(object);
     }
 
     /**
@@ -45,6 +43,10 @@ public class Logger {
         if(!levelEnabled(logLevel)) {
             return;
         }
+        doLog(formatLogMsg(msg, logLevel));
+    }
+
+    protected String formatLogMsg(String msg, LogLevel logLevel) {
         StringBuilder sb = new StringBuilder();
         String logLevelString = logLevel.name();
         sb.append(logLevelString);
@@ -56,9 +58,11 @@ public class Logger {
         String objectString = object.toString();
         String objectStringLog = objectString.substring(objectString.lastIndexOf('.') + 1);
         sb.append("[Logger of '").append(objectStringLog).append("' in thread '").append(Thread.currentThread().getName()).append("'] ")
-                        .append(msg);
-        System.out.println(sb);
+                .append(msg);
+        return sb.toString();
     }
+
+    protected abstract void doLog(String msg);
 
     private boolean levelEnabled(LogLevel logLevel) {
         if(this.logLevel != null && this.logLevel.compareTo(logLevel) > 0) {
@@ -79,8 +83,15 @@ public class Logger {
     }
 
     public void logException(Exception e) {
-        logError("Exception occured!");
-        e.printStackTrace();
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
+        doLog(stringWriter.toString());
+    }
+
+    public void logException(Exception e, String msg) {
+        logError(msg);
+        logException(e);
     }
 
     public void setLogLevel(LogLevel logLevel) {
@@ -99,7 +110,7 @@ public class Logger {
     public static void main(String[] args) {
         globalLogLevel = LogLevel.INFO;
         Object object1 = new Object(), object2 = new Object();
-        Logger logger1 = Logger.createLogger(object1), logger2 = Logger.createLogger(object2);
+        Logger logger1 = ConsoleLogger.createLogger(object1), logger2 = ConsoleLogger.createLogger(object2);
         logger1.logDebug("AAAAA");
         logger2.logDebug("BBBBB");
         logger1.logInfo("AAAAA");

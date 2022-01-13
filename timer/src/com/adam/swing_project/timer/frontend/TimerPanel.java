@@ -1,6 +1,7 @@
 package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.timer.Timer;
 
 import javax.swing.*;
@@ -16,7 +17,7 @@ public class TimerPanel extends JPanel {
     private final JFrame jFrame;
     private int timerPanelCount = 0;
     private List<SingleTimerPanel> singleTimerPanelList = new LinkedList<>();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     public TimerPanel(JFrame jFrame) {
         this.jFrame = jFrame;

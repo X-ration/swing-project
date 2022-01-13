@@ -1,6 +1,8 @@
 package com.adam.swing_project.library.runtime;
 
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -14,7 +16,7 @@ public class ManagedShutdownHook extends Thread {
 
     private static ManagedShutdownHook instance;
     private final List<PriorityShutdownHook> priorityShutdownHooks = Collections.synchronizedList(new LinkedList<>());
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private ManagedShutdownHook() {
         Runtime.getRuntime().addShutdownHook(this);
     }

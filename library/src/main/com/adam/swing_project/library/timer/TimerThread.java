@@ -1,7 +1,9 @@
 package com.adam.swing_project.library.timer;
 
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -127,7 +129,7 @@ public class TimerThread extends Thread{
      * 计时任务队列
      */
     private final List<TimerTask> timerTaskList = new LinkedList<>();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private volatile boolean terminateSign = false;
     private final Object notEmptyLock = new Object(), modifyingLock = new Object();
     private final ThreadPoolExecutor workThreadPool = new ThreadPoolExecutor(1,1,

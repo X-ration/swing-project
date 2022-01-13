@@ -3,7 +3,9 @@ package com.adam.swing_project.library.snapshot;
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.datetime.Time;
+import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.library.util.JdkDateTimeUtil;
 
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public class SnapshotManager {
     private static final SnapshotManager instance = new SnapshotManager();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
     private final List<Snapshotable> snapshotableList = new ArrayList<>();
     private File snapshotDir;
     private static final Pattern SNAPSHOT_FILE_NAME_PATTERN = Pattern.compile("snapshot-(\\d{4})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})\\.dat");
