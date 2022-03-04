@@ -2,6 +2,7 @@ package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.timer.TimerProgram;
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.timer.option.OptionConstants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,10 +20,20 @@ public class FileManager {
     private final Map<String, File> resourceTempFileMap = new HashMap<>();
     private final String TEMP_FILE_PREFIX = "swing_project.timer";
 
-    private final File appRootDir;
+    private File appRootDir;
 
     private FileManager() {
-        appRootDir = new File(System.getProperty("user.home") + File.separator + "swing-timer");
+        String rootWorkDir = OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_WORK_DIR, String.class,
+                System.getProperty("user.home") + File.separator + "swing-timer");
+        updateAppRootDir(rootWorkDir);
+    }
+
+    /**
+     * 变更工作目录，此方法目前只能通过选项面板调用
+     * @param rootWorkDir
+     */
+    public void updateAppRootDir(String rootWorkDir) {
+        appRootDir = new File(rootWorkDir);
         if(!appRootDir.exists()) {
             appRootDir.mkdir();
         }
@@ -41,12 +52,14 @@ public class FileManager {
      * @param rootDir
      * @param subDirName
      */
-    public File requireSubDir(File rootDir, String subDirName) {
+    private File requireSubDir(File rootDir, String subDirName) {
         if(!rootDir.exists()) {
             rootDir.mkdir();
         }
         File subDir = new File(rootDir, subDirName);
-        subDir.mkdir();
+        if(!subDir.exists()) {
+            subDir.mkdir();
+        }
         return subDir;
     }
 

@@ -23,6 +23,7 @@ public class ApplicationManager {
     private static final ApplicationManager instance = new ApplicationManager();
     private final Logger logger = LoggerFactory.getLogger(this);
     private final List<Object> programGlobalObjectList = new LinkedList<>();
+    private ApplicationArgumentResolver argumentResolver;
 
     public static ApplicationManager getInstance() {
         return instance;
@@ -30,14 +31,8 @@ public class ApplicationManager {
 
     public void init() {
         ThreadManager.getInstance().initThreads();
-        ApplicationArgumentResolver argumentResolver = getProgramGlobalObject(ApplicationArgumentResolver.class);
-        String env = argumentResolver.getOptionValue("env");
-        String subDir = "snapshot";
-        if(env != null) {
-            subDir += ("-" + env);
-        }
-        File snapshotDir = FileManager.getInstance().requireSubDir(subDir);
-        SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
+        argumentResolver = getProgramGlobalObject(ApplicationArgumentResolver.class);
+        updateSnapshotDir();
         //只保留最近的3个快照文件
         SnapshotManager.getInstance().clearSnapshot(3);
 
@@ -59,6 +54,16 @@ public class ApplicationManager {
                 }
             }
         }
+    }
+
+    public void updateSnapshotDir() {
+        String env = argumentResolver.getOptionValue("env");
+        String subDir = "snapshot";
+        if(env != null) {
+            subDir += ("-" + env);
+        }
+        File snapshotDir = FileManager.getInstance().requireSubDir(subDir);
+        SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
     }
 
     public void close() {

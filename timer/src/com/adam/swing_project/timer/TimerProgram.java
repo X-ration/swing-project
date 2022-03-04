@@ -6,6 +6,7 @@ import com.adam.swing_project.timer.component.ApplicationManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
+import com.adam.swing_project.timer.option.OptionDialog;
 import com.adam.swing_project.timer.stat.TimerStatistic;
 
 import javax.swing.*;
@@ -54,6 +55,7 @@ public class TimerProgram extends JFrame{
                 , helpMenu = new JMenu("帮助(H)");
         JMenuItem fileNewTimerItem = new JMenuItem("新建计时器(N)"),
                 fileStatisticItem = new JMenuItem("统计数据(S)"),
+                optionItem = new JMenuItem("选项面板"),
                 helpAboutItem = new JMenuItem("关于(A)");
         JCheckBoxMenuItem optionStatItem = new JCheckBoxMenuItem("启用统计(待开发)");
         jMenuBar.add(fileMenu);
@@ -62,6 +64,7 @@ public class TimerProgram extends JFrame{
         fileMenu.add(fileNewTimerItem);
         fileMenu.add(fileStatisticItem);
         optionMenu.add(optionStatItem);
+        optionMenu.add(optionItem);
         helpMenu.add(helpAboutItem);
         fileMenu.setMnemonic('F');
         optionMenu.setMnemonic('O');
@@ -76,6 +79,7 @@ public class TimerProgram extends JFrame{
         });
         fileStatisticItem.addActionListener(e -> showStatisticDialog(jFrame));
         optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
+        optionItem.addActionListener(e -> (new OptionDialog(jFrame)).setVisible(true));
         helpAboutItem.addActionListener(e -> {
             String aboutMessage = titleString + System.lineSeparator() +
                     System.lineSeparator() +
