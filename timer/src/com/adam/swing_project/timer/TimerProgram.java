@@ -1,8 +1,13 @@
 package com.adam.swing_project.timer;
 
+import com.adam.swing_project.library.logger.ConsoleLogger;
+import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
+import com.adam.swing_project.library.logger.RollingFileLogger;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
+import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
@@ -13,13 +18,22 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
 
     public static void main(String[] args) {
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
+        FileManager.getInstance().init(argumentResolver);
+        File logFile = FileManager.getInstance().requireSubFile("swing-timer.log");
+        List<Logger> loggerList = new LinkedList<>();
+        loggerList.add(ConsoleLogger.createLogger(TimerProgram.class));
+        loggerList.add(RollingFileLogger.createLogger(TimerProgram.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
+        LoggerFactory.setupLoggers(loggerList);
         ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
         TimerAppInfo appInfo;
         try {

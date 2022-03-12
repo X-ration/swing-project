@@ -1,5 +1,6 @@
 package com.adam.swing_project.timer.component;
 
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.TimerProgram;
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.timer.option.OptionConstants;
@@ -23,19 +24,42 @@ public class FileManager {
     private File appRootDir;
 
     private FileManager() {
-        String rootWorkDir = OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_WORK_DIR, String.class,
-                System.getProperty("user.home") + File.separator + "swing-timer");
-        updateAppRootDir(rootWorkDir);
+    }
+
+    public void init(ApplicationArgumentResolver  argumentResolver) {
+//        String rootWorkDir = OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_WORK_DIR, String.class,
+//                System.getProperty("user.home") + File.separator + "swing-timer");
+        String rootWorkDir = RootConfigStorage.getInstance().getRootConfig(OptionConstants.OPTION_ROOT_WORK_DIR);
+        if(rootWorkDir == null) {
+            rootWorkDir = System.getProperty("user.home") + File.separator + "swing-timer";
+            RootConfigStorage.getInstance().updateRootConfig(OptionConstants.OPTION_ROOT_WORK_DIR, rootWorkDir);
+        }
+        updateAppRootDir(rootWorkDir, argumentResolver);
     }
 
     /**
-     * 变更工作目录，此方法目前只能通过选项面板调用
+     * 变更根目录，此方法目前只能通过选项面板调用
+     * 根目录默认与工作目录(root.workDir)相同；如果命令行指定了env参数则为工作目录下env-{env}子目录。
      * @param rootWorkDir
      */
     public void updateAppRootDir(String rootWorkDir) {
-        appRootDir = new File(rootWorkDir);
-        if(!appRootDir.exists()) {
-            appRootDir.mkdir();
+        ApplicationArgumentResolver argumentResolver = ApplicationManager.getInstance().getProgramGlobalObject(ApplicationArgumentResolver.class);
+        updateAppRootDir(rootWorkDir, argumentResolver);
+    }
+    public void updateAppRootDir(String rootWorkDir, ApplicationArgumentResolver argumentResolver) {
+        updateAppRootDir(new File(rootWorkDir));
+        String env = argumentResolver.getOptionValue("env");
+        if(env != null) {
+            String subDirName =  ("env-" + env);
+            File subDir = requireSubDir(subDirName);
+            updateAppRootDir(subDir);
+        }
+    }
+
+    private void updateAppRootDir(File appRootDir) {
+        this.appRootDir = appRootDir;
+        if(!this.appRootDir.exists()) {
+            this.appRootDir.mkdir();
         }
     }
 
@@ -45,6 +69,27 @@ public class FileManager {
      */
     public File requireSubDir(String subDirName) {
         return requireSubDir(appRootDir, subDirName);
+    }
+
+    public File getAppRootDir() {
+        return appRootDir;
+    }
+
+    /**
+     * 在根目录下新建一个文件
+     * @param subFileName
+     * @return
+     */
+    public File requireSubFile(String subFileName) {
+        File subFile = new File(appRootDir, subFileName);
+        if(!subFile.exists()) {
+            try {
+                subFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return subFile;
     }
 
     /**

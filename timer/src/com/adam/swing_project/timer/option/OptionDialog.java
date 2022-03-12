@@ -217,7 +217,9 @@ public class OptionDialog extends JDialog {
         itemList.add(demoItem);
 
         Box advancedPane = Box.createVerticalBox();
-        JCheckBox advancedDebug = new JCheckBox("启用");
+        JCheckBox advancedDebug = new JCheckBox("输出日志");
+        advancedDebug.setEnabled(false);
+        advancedDebug.setSelected(true);
         advancedPane.add(advancedDebug);
         itemList.add(new OptionDialogItem("高级", advancedPane));
         return itemList;

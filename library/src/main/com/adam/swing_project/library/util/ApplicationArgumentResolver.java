@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ApplicationArgumentResolver {
 
-    private final Logger logger = LoggerFactory.getLogger(this);
+//    private final Logger logger = LoggerFactory.getLogger(this);
     private final Map<String, String> resolvedMap = new HashMap<>();
     public static final String ARGUMENT_RESOLVER_LOG_LEVEL = "argumentResolverLogLevel";
 
@@ -54,7 +54,7 @@ public class ApplicationArgumentResolver {
     }
 
     private void registerOption(String key, String value) {
-        logger.logDebug("Registered option '" + key + "=" + value + "'");
+//        logger.logDebug("Registered option '" + key + "=" + value + "'");
         resolvedMap.put(key, value);
     }
 

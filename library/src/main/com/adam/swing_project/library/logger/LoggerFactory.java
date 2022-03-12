@@ -16,11 +16,14 @@ public class LoggerFactory {
 
     private static final List<Logger> loggerList = new LinkedList<>();
     private static volatile boolean initialized, initializing;
-    static {
-        File logFile = new File("0");
-        loggerList.add(ConsoleLogger.createLogger(LoggerFactory.class));
-//        loggerList.add(AsyncFileLogger.createLogger(LoggerFactory.class, logFile));
-        loggerList.add(RollingFileLogger.createLogger(LoggerFactory.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
+
+    /**
+     * 在程序启动时调用，初始化logger
+     * @param loggers
+     */
+    public static void setupLoggers(List<Logger> loggers) {
+        loggerList.clear();
+        loggerList.addAll(loggers);
     }
 
     public static Logger getLogger(Object object) {

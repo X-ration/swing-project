@@ -57,13 +57,7 @@ public class ApplicationManager {
     }
 
     public void updateSnapshotDir() {
-        String env = argumentResolver.getOptionValue("env");
-        String subDir = "snapshot";
-        if(env != null) {
-            subDir += ("-" + env);
-        }
-        File snapshotDir = FileManager.getInstance().requireSubDir(subDir);
-        SnapshotManager.getInstance().setSnapshotDir(snapshotDir);
+        SnapshotManager.getInstance().setSnapshotDir(FileManager.getInstance().getAppRootDir());
     }
 
     public void close() {

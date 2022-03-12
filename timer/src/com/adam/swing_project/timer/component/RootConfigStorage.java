@@ -1,7 +1,5 @@
 package com.adam.swing_project.timer.component;
 
-import com.adam.swing_project.library.assertion.Assert;
-
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
