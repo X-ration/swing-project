@@ -8,6 +8,7 @@ import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
 import com.adam.swing_project.timer.component.FileManager;
+import com.adam.swing_project.timer.component.RootConfigStorage;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
@@ -27,6 +28,7 @@ public class TimerProgram extends JFrame{
 
     public static void main(String[] args) {
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
+        RootConfigStorage.getInstance().init(argumentResolver);
         FileManager.getInstance().init(argumentResolver);
         File logFile = FileManager.getInstance().requireSubFile("swing-timer.log");
         List<Logger> loggerList = new LinkedList<>();

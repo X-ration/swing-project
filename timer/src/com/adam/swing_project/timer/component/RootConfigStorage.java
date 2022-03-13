@@ -1,5 +1,7 @@
 package com.adam.swing_project.timer.component;
 
+import com.adam.swing_project.library.util.ApplicationArgumentResolver;
+
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,11 +9,20 @@ import java.util.Map;
 public class RootConfigStorage {
 
     private final File rootDir = new File(System.getProperty("user.home") + File.separator + "swing-timer");
-    private final File rootFile = new File(rootDir, "root_config");
+    private File rootFile;
     private final Map<String, String> rootConfigMap = new HashMap<>();
     private static final RootConfigStorage instance = new RootConfigStorage();
 
     private RootConfigStorage() {
+    }
+
+    public void init(ApplicationArgumentResolver argumentResolver) {
+        String rootFileName = "root_config";
+        String env = argumentResolver.getOptionValue("env");
+        if(env != null) {
+            rootFileName += ("-" + env);
+        }
+        rootFile = new File(rootDir, rootFileName);
         try {
             if (!rootDir.exists()) {
                 rootDir.mkdirs();
