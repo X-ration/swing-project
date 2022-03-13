@@ -6,8 +6,6 @@ import com.adam.swing_project.library.snapshot.CustomInstantiationSnapshotable;
 import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.SnapshotReader;
 import com.adam.swing_project.library.snapshot.SnapshotWriter;
-import com.adam.swing_project.library.timer.action_log.ActionLog;
-import com.adam.swing_project.library.timer.action_log.ActionLogManager;
 import com.adam.swing_project.library.util.DateTimeUtil;
 
 import java.util.*;

@@ -2,17 +2,10 @@ package com.adam.swing_project.library.timer;
 
 import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.datetime.Time;
-import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
-import com.adam.swing_project.library.snapshot.SnapshotManager;
-import com.adam.swing_project.library.snapshot.SnapshotReader;
-import com.adam.swing_project.library.snapshot.SnapshotWriter;
-import com.adam.swing_project.library.snapshot.Snapshotable;
-import com.adam.swing_project.library.timer.action_log.ActionLog;
-import com.adam.swing_project.library.timer.action_log.ActionLogManager;
 import com.adam.swing_project.library.util.DateTimeUtil;
 
 import java.util.Arrays;
@@ -20,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class Timer implements Snapshotable {
+public class Timer {
 
     private static final TimerThread TIMER_THREAD = new TimerThread();
 
@@ -44,22 +37,21 @@ public class Timer implements Snapshotable {
         void stateChanged(TimerStatus oldStatus, TimerStatus newStatus);
     }
 
-    private final Time countingTime = new Time(0,0,0), resetTime = new Time(0,0,0);
+    protected final Time countingTime = new Time(0,0,0), resetTime = new Time(0,0,0);
     private final TimerThread timerThread;
-    private final Logger logger = LoggerFactory.getLogger(this);
-    private String timerName;
-    private volatile TimerStatus status;
-    private TimerThread.FixedDelayTimerTask timerTask;
-    private final int[] pausedTempArray = new int[2];
+    protected final Logger logger = LoggerFactory.getLogger(this);
+    protected String timerName;
+    protected volatile TimerStatus status;
+    protected TimerThread.FixedDelayTimerTask timerTask;
+    protected final int[] pausedTempArray = new int[2];
     private final List<CountingListener> countingListenerList = new LinkedList<>();
     private final List<StateChangeListener> stateChangeListenerList = new LinkedList<>();
-    TimerThread.TimerTaskAction countingTimeAction = () -> {
+    protected TimerThread.TimerTaskAction countingTimeAction = () -> {
         countingTime.minusSecond();
         fireCountingUpdated();
         logger.logDebug("Timer '" + timerName + "' : " + DateTimeUtil.wrapTimeHourToSecond(countingTime) + " at " + System.currentTimeMillis());
         if (countingTime.getHour() == 0 && countingTime.getMinute() == 0 && countingTime.getSecond() == 0) {
             logger.logDebug("Timer '" + timerName + "' stopped at " + System.currentTimeMillis());
-            addActionLog(ActionLog.ActionLogType.TIMER_TIME_UP);
             changeStatus(TimerStatus.TIME_UP);
         }
     };
@@ -73,100 +65,10 @@ public class Timer implements Snapshotable {
         this.timerName = timerName;
         this.timerThread = TIMER_THREAD;
         this.status = TimerStatus.INITIALIZED;
-        SnapshotManager.getInstance().registerSnapshotable(this);
-        //这里记日志会受到持久化影响多记日志，而且INITIALIZE类型对于统计没有作用
-//        addActionLog(ActionLog.ActionLogType.TIMER_INITIALIZE);
-    }
-
-
-    @Override
-    public byte[] writeToSnapshot() {
-        SnapshotWriter writer = SnapshotWriter.writer();
-        writer.writeString(timerName);
-        writer.writeInt(status.ordinal());
-
-        switch (status) {
-            case READY:
-            case STOPPED:
-            case TIME_UP:
-                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond());
-                break;
-            case RUNNING:
-                //todo 考虑快照拍摄时冻结action
-                int actionTimeLeft = calcActionTimeLeft(timerTask);
-                long currentTimeMills = System.currentTimeMillis();
-                int startDelayDuration = calcStartDelayDuration(timerTask, currentTimeMills);
-                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond())
-                        .writeInt(countingTime.getHour()).writeInt(countingTime.getMinute()).writeInt(countingTime.getSecond())
-                        .writeInt(actionTimeLeft).writeInt(startDelayDuration).writeLong(currentTimeMills);
-                break;
-            case PAUSED:
-                writer.writeInt(resetTime.getHour()).writeInt(resetTime.getMinute()).writeInt(resetTime.getSecond())
-                        .writeInt(countingTime.getHour()).writeInt(countingTime.getMinute()).writeInt(countingTime.getSecond())
-                        .writeInt(pausedTempArray[0]).writeInt(pausedTempArray[1]);
-                break;
-            case INITIALIZED:
-            default:
-                break;
-        }
-
-        return writer.toByteArray();
-    }
-
-    /**
-     * 开发记录：RUNNING状态的经快照恢复后继续运行，会有20ms左右的误差，不过尚在允许范围内
-     * @param bytes
-     */
-    @Override
-    public void restoreFromSnapshot(byte[] bytes) {
-        SnapshotReader reader = SnapshotReader.reader(bytes);
-        timerName = reader.readString();
-        status = TimerStatus.values()[reader.readInt()];
-
-        switch (status) {
-            case READY:
-            case STOPPED:
-            case TIME_UP:
-                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
-                break;
-            case RUNNING:
-                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
-                countingTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
-                int lastActionTimeLeft = reader.readInt();
-                int lastStartDelayDuration = reader.readInt();
-                long lastTimeMills = reader.readLong(), currentTimeMills = System.currentTimeMillis();
-                int diff = (int)(currentTimeMills - lastTimeMills) - lastStartDelayDuration;
-                if(diff < 0) {
-                    startInternal(lastActionTimeLeft, -diff, TimeUnit.MILLISECONDS);
-                } else {
-                    int makeUpTime = 1 + diff / 1000;
-                    if(makeUpTime >= lastActionTimeLeft) {
-                        countingTime.setAllField(0,0,0);
-                        this.status = TimerStatus.TIME_UP;
-                        addActionLog(ActionLog.ActionLogType.TIMER_TIME_UP, lastTimeMills + 1000 - diff % 1000 + lastActionTimeLeft * 1000L);
-                    } else {
-                        for(int i=0;i<makeUpTime;i++) {
-                            this.countingTimeAction.action();
-                        }
-                        startInternal(lastActionTimeLeft - makeUpTime, 1000 - diff % 1000, TimeUnit.MILLISECONDS);
-                    }
-                }
-                break;
-            case PAUSED:
-                resetTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
-                countingTime.setAllField(reader.readInt(), reader.readInt(), reader.readInt());
-                pausedTempArray[0] = reader.readInt();
-                pausedTempArray[1] = reader.readInt();
-                break;
-            case INITIALIZED:
-            default:
-                break;
-        }
     }
 
     public void start() {
         requireStatus(TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.PAUSED, TimerStatus.TIME_UP);
-        addActionLog(ActionLog.ActionLogType.TIMER_START);
         int startDelayDuration;
         TimeUnit startDelayUnit;
         int actionTimeLimit;
@@ -186,14 +88,14 @@ public class Timer implements Snapshotable {
         changeStatus(TimerStatus.RUNNING);
     }
 
-    private void startInternal(int actionTimeLimit, int startDelayDuration, TimeUnit startDelayUnit) {
+    protected void startInternal(int actionTimeLimit, int startDelayDuration, TimeUnit startDelayUnit) {
         this.timerTask = timerThread.new FixedDelayTimerTask(actionTimeLimit, startDelayDuration, startDelayUnit, 1, TimeUnit.SECONDS);
         timerTask.setTaskName("Timer '" + timerName + "' countingTimeAction");
         timerTask.setAction(countingTimeAction);
         timerThread.addTask(timerTask);
     }
 
-    private int calcActionTimeLeft(TimerThread.TimerTask timerTask) {
+    protected int calcActionTimeLeft(TimerThread.TimerTask timerTask) {
         return timerTask.getActionTimeLimit() - timerTask.getLastActionTime();
     }
 
@@ -201,7 +103,7 @@ public class Timer implements Snapshotable {
         return calcStartDelayDuration(timerTask, timerTask.getCanceledMills());
     }
 
-    private int calcStartDelayDuration(TimerThread.FixedDelayTimerTask timerTask, long timeMills) {
+    protected int calcStartDelayDuration(TimerThread.FixedDelayTimerTask timerTask, long timeMills) {
         int startDelayDuration;
         if(timerTask.getLastActionTime() > 0) {
             startDelayDuration = (int) (1000 - (timeMills - timerTask.startActionMills()) % 1000);
@@ -217,7 +119,6 @@ public class Timer implements Snapshotable {
 
     public void pause() {
         requireStatus(TimerStatus.RUNNING);
-        addActionLog(ActionLog.ActionLogType.TIMER_PAUSE);
         timerThread.cancelTask(this.timerTask);
         pausedTempArray[0] = calcActionTimeLeft(timerTask);
         pausedTempArray[1] = calcStartDelayDuration(timerTask);
@@ -227,7 +128,6 @@ public class Timer implements Snapshotable {
 
     public void stop() {
         requireStatus(TimerStatus.RUNNING, TimerStatus.PAUSED);
-        addActionLog(ActionLog.ActionLogType.TIMER_STOP);
         timerTask.setAction(()->{});
         timerThread.cancelTask(timerTask);
         this.countingTime.setAllField(0,0,0);
@@ -251,7 +151,6 @@ public class Timer implements Snapshotable {
     public void terminate() {
         if(status == TimerStatus.TERMINATED)
             return;
-        addActionLog(ActionLog.ActionLogType.TIMER_TERMINATE);
         if(timerTask != null) {
             timerTask.setAction(() -> {});
             timerThread.cancelTask(timerTask);
@@ -261,7 +160,6 @@ public class Timer implements Snapshotable {
         this.timerTask = null;
         logger.logDebug("Timer '" + timerName + "' terminated at " + System.currentTimeMillis());
         changeStatus(TimerStatus.TERMINATED);
-        SnapshotManager.getInstance().removeSnapshotable(this);
         countingListenerList.clear();
         stateChangeListenerList.clear();
     }
@@ -270,7 +168,6 @@ public class Timer implements Snapshotable {
         requireStatus(TimerStatus.INITIALIZED, TimerStatus.READY, TimerStatus.STOPPED, TimerStatus.TIME_UP);
         Assert.notNull(time);
         Assert.isTrue(time.getHour() >= 0 && time.getMinute() >= 0 && time.getSecond() >= 0, "Invalid param");
-        addActionLog(ActionLog.ActionLogType.TIMER_RESET);
         this.resetTime.copyFrom(time);
         this.countingTime.setAllField(0,0,0);
         if(time.getHour() == 0 && time.getMinute() == 0 && time.getSecond() == 0) {
@@ -315,22 +212,6 @@ public class Timer implements Snapshotable {
             }
         }
         Assert.isTrue(found, TimerException.class, "Invalid timer status: actual=" + status + ",required=" + Arrays.toString(statuses));
-    }
-
-    private void addActionLog(ActionLog.ActionLogType actionLogType) {
-        Time resetTime = new Time(0,0,0), countingTime = new Time(0,0,0);
-        resetTime.copyFrom(this.resetTime);
-        countingTime.copyFrom(this.countingTime);
-        ActionLog actionLog = new ActionLog(actionLogType, timerName, countingTime, resetTime);
-        ActionLogManager.getInstance().addActionLog(actionLog);
-    }
-
-    private void addActionLog(ActionLog.ActionLogType actionLogType, long timeMills) {
-        Time resetTime = new Time(0,0,0), countingTime = new Time(0,0,0);
-        resetTime.copyFrom(this.resetTime);
-        countingTime.copyFrom(this.countingTime);
-        ActionLog actionLog = new ActionLog(actionLogType, timerName, countingTime, resetTime, timeMills);
-        ActionLogManager.getInstance().addActionLog(actionLog);
     }
 
     private void changeStatus(TimerStatus newStatus) {

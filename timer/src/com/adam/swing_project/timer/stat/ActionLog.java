@@ -1,4 +1,4 @@
-package com.adam.swing_project.library.timer.action_log;
+package com.adam.swing_project.timer.stat;
 
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.datetime.Time;
@@ -20,18 +20,20 @@ public class ActionLog implements Snapshotable {
     private Date date;
     private String timerName;
     private Time countingTime, resetTime;
+    private int timerId;
 
     private ActionLog() {}
 
-    public ActionLog(ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime) {
-        this(actionLogType, new java.util.Date(), timerName, countingTime, resetTime);
+    public ActionLog(int timerId, ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime) {
+        this(timerId, actionLogType, new java.util.Date(), timerName, countingTime, resetTime);
     }
 
-    public ActionLog(ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime, long timeMills) {
-        this(actionLogType, new java.util.Date(timeMills), timerName, countingTime, resetTime);
+    public ActionLog(int timerId, ActionLogType actionLogType, String timerName, Time countingTime, Time resetTime, long timeMills) {
+        this(timerId, actionLogType, new java.util.Date(timeMills), timerName, countingTime, resetTime);
     }
 
-    public ActionLog(ActionLogType actionLogType, java.util.Date utilDate, String timerName, Time countingTime, Time resetTime) {
+    public ActionLog(int timerId, ActionLogType actionLogType, java.util.Date utilDate, String timerName, Time countingTime, Time resetTime) {
+        this.timerId = timerId;
         this.utilDate = utilDate;
         this.date = new Date(utilDate);
         this.actionLogType = actionLogType;
@@ -43,6 +45,7 @@ public class ActionLog implements Snapshotable {
     @Override
     public byte[] writeToSnapshot() {
         SnapshotWriter writer = SnapshotWriter.writer();
+        writer.writeInt(timerId);
         writer.writeInt(actionLogType.ordinal());
         writer.writeLong(utilDate.getTime());
         writer.writeString(timerName);
@@ -54,6 +57,7 @@ public class ActionLog implements Snapshotable {
     @Override
     public void restoreFromSnapshot(byte[] bytes) {
         SnapshotReader reader = SnapshotReader.reader(bytes);
+        this.timerId = reader.readInt();
         this.actionLogType = ActionLogType.values()[reader.readInt()];
         this.utilDate = new java.util.Date(reader.readLong());
         this.date = new Date(utilDate);
@@ -84,5 +88,13 @@ public class ActionLog implements Snapshotable {
 
     public Time getResetTime() {
         return resetTime;
+    }
+
+    public int getTimerId() {
+        return timerId;
+    }
+
+    void setTimerId(int timerId) {
+        this.timerId = timerId;
     }
 }

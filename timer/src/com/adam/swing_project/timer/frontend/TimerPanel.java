@@ -2,7 +2,7 @@ package com.adam.swing_project.timer.frontend;
 
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
-import com.adam.swing_project.library.timer.Timer;
+import com.adam.swing_project.timer.timer.ExtendedTimer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,7 +28,7 @@ public class TimerPanel extends JPanel {
         addSingleTimerPanel(null);
     }
 
-    public void addSingleTimerPanel(Timer timer) {
+    public void addSingleTimerPanel(ExtendedTimer timer) {
         SingleTimerPanel singleTimerPanel;
         if(timer == null) {
             singleTimerPanel = new SingleTimerPanel(jFrame);

@@ -5,7 +5,6 @@ import com.adam.swing_project.library.ajswing.AJStatusButtonBinaryStatus;
 import com.adam.swing_project.library.datetime.Time;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
-import com.adam.swing_project.library.timer.Timer;
 import com.adam.swing_project.library.util.DateTimeUtil;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
@@ -14,6 +13,7 @@ import com.adam.swing_project.timer.component.IconManager;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.thread.AudioThread;
 import com.adam.swing_project.timer.thread.ThreadManager;
+import com.adam.swing_project.timer.timer.ExtendedTimer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,7 +27,7 @@ public class SingleTimerPanel extends JPanel {
     private final AJStatusButton timerMainButton, stopButton, editButton, deleteButton;
     private final JFrame parentJFrame;
 
-    private final Timer timer;
+    private final ExtendedTimer timer;
     private final AudioThread audioThread;
     private final Logger logger = LoggerFactory.getLogger(this);
 
@@ -36,10 +36,10 @@ public class SingleTimerPanel extends JPanel {
     }
 
     public SingleTimerPanel(JFrame jFrame) {
-        this(jFrame, new Timer("计时器"));
+        this(jFrame, new ExtendedTimer("计时器"));
     }
 
-    public SingleTimerPanel(JFrame jFrame, Timer timer) {
+    public SingleTimerPanel(JFrame jFrame, ExtendedTimer timer) {
         this.timer = timer;
         this.countingLabel = new JLabel();
         this.infoLabel = new JLabel();
@@ -191,7 +191,7 @@ public class SingleTimerPanel extends JPanel {
         setBorder(BorderFactory.createEtchedBorder());
     }
 
-    public Timer getTimer() {
+    public ExtendedTimer getTimer() {
         return timer;
     }
 

@@ -1,7 +1,6 @@
-package com.adam.swing_project.library.timer.action_log;
+package com.adam.swing_project.timer.stat;
 
 import com.adam.swing_project.library.datetime.Date;
-import com.adam.swing_project.library.logger.ConsoleLogger;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.library.snapshot.*;
@@ -25,7 +24,7 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
     }
 
     public void addActionLog(ActionLog actionLog) {
-        logger.logDebug("Added action log " + actionLog);
+        logger.logDebug("Added action log timerId=" + actionLog.getTimerId());
         synchronized (actionLogQueue) {
             addActionLogInternal(actionLog);
         }
@@ -54,6 +53,22 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
             }
         }
         return result;
+    }
+
+    /**
+     * 重新映射ActionLog的timerId值，只在初始化阶段调用
+     * @param timerIdMap
+     */
+    public void remapTimerIds(Map<Integer, Integer> timerIdMap) {
+        int queueSize = actionLogQueue.size();
+        while(queueSize-->0) {
+            ActionLog actionLog = actionLogQueue.poll();
+            int oldId = actionLog.getTimerId();
+            int remapId = timerIdMap.getOrDefault(oldId, -1);
+            actionLog.setTimerId(remapId);
+            logger.logDebug("Remapped ActionLog id: " + oldId + "->" + remapId);
+            actionLogQueue.offer(actionLog);
+        }
     }
 
     private void addActionLogInternal(ActionLog actionLog) {

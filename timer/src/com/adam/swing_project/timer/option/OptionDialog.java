@@ -176,12 +176,13 @@ public class OptionDialog extends JDialog {
 
     private List<OptionDialogItem> collectDialogItems() {
         List<OptionDialogItem> itemList = new LinkedList<>();
-        OptionDialogItem demoItem;
+        OptionDialogItem optionDialogItem;
         GridBagConstraints gridBagConstraints;
 
         JPanel generalPane = new JPanel(new GridBagLayout());
-        JPanel workingDirComp = new JPanel(new GridBagLayout());
+        JPanel workingDirComp = new JPanel(new GridBagLayout()), statComp = new JPanel(new BorderLayout());
         workingDirComp.setBorder(BorderFactory.createTitledBorder("工作目录"));
+        statComp.setBorder(BorderFactory.createTitledBorder("默认统计行为"));
         JTextField workingDirField = new JTextField(30);
         workingDirField.setEditable(false);
         workingDirField.setText(OptionManager.getInstance().getOptionValue(OptionConstants.OPTION_ROOT_WORK_DIR, String.class));
@@ -203,10 +204,31 @@ public class OptionDialog extends JDialog {
                 GridBagConstraints.CENTER,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
         workingDirComp.add(workingDirButton, gridBagConstraints);
         gridBagConstraints = new GridBagConstraints(0,0,1,1,1,0,
-                GridBagConstraints.NORTH,GridBagConstraints.HORIZONTAL,new Insets(0,0,0,0),0,0);
+                GridBagConstraints.CENTER,GridBagConstraints.HORIZONTAL,new Insets(0,0,0,0),0,0);
         generalPane.add(workingDirComp, gridBagConstraints);
-        demoItem = new OptionDialogItem("常规", generalPane);
-        demoItem.addTrackedOptionComponent(workingDirField, OptionConstants.OPTION_ROOT_WORK_DIR, new TrackedComponentAction() {
+        JPanel statInnerComp = new JPanel(new GridBagLayout());
+        JRadioButton statDisableRadio = new JRadioButton("关闭统计功能"),
+                statStartDayRadio = new JRadioButton("计时时长计入计时开始日"),
+                statEndDayRadio = new JRadioButton("计时时长计入计时结束日");
+        ButtonGroup statButtonGroup = new ButtonGroup();
+        statButtonGroup.add(statDisableRadio);
+        statButtonGroup.add(statStartDayRadio);
+        statButtonGroup.add(statEndDayRadio);
+        gridBagConstraints = new GridBagConstraints(0,0,1,1,0,0,
+                GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
+        statInnerComp.add(statDisableRadio, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints(0,1,1,1,0,0,
+                GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
+        statInnerComp.add(statStartDayRadio, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints(0,2,1,1,0,0,
+                GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
+        statInnerComp.add(statEndDayRadio, gridBagConstraints);
+        statComp.add(statInnerComp, BorderLayout.WEST);
+        gridBagConstraints = new GridBagConstraints(0, 1, 1, 1, 1, 0,
+                GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0,0,0,0),0,0);
+        generalPane.add(statComp, gridBagConstraints);
+        optionDialogItem = new OptionDialogItem("常规", generalPane);
+        optionDialogItem.addTrackedOptionComponent(workingDirField, OptionConstants.OPTION_ROOT_WORK_DIR, new TrackedComponentAction() {
             @Override
             public void onValueChange(JComponent jComponent, Object currentValue) {
                 String workingDir = (String) currentValue;
@@ -214,14 +236,15 @@ public class OptionDialog extends JDialog {
                 ApplicationManager.getInstance().updateSnapshotDir();
             }
         });
-        itemList.add(demoItem);
+        itemList.add(optionDialogItem);
 
         Box advancedPane = Box.createVerticalBox();
         JCheckBox advancedDebug = new JCheckBox("输出日志");
         advancedDebug.setEnabled(false);
         advancedDebug.setSelected(true);
         advancedPane.add(advancedDebug);
-        itemList.add(new OptionDialogItem("高级", advancedPane));
+        optionDialogItem = new OptionDialogItem("高级", advancedPane);
+        itemList.add(optionDialogItem);
         return itemList;
     }
 

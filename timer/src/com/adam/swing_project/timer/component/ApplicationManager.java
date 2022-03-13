@@ -6,14 +6,16 @@ import com.adam.swing_project.library.runtime.ManagedShutdownHook;
 import com.adam.swing_project.library.runtime.PriorityShutdownHook;
 import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.Snapshotable;
-import com.adam.swing_project.library.timer.Timer;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
+import com.adam.swing_project.timer.stat.ActionLogManager;
 import com.adam.swing_project.timer.thread.ThreadManager;
+import com.adam.swing_project.timer.timer.ExtendedTimer;
+import com.adam.swing_project.timer.timer.TimerManager;
 
-import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 计时程序关键过程管理器，如：初始化操作，程序退出的清理操作
@@ -47,13 +49,22 @@ public class ApplicationManager {
         ManagedShutdownHook.getInstance().registerShutdownHook(shutdownHook);
         logger.logDebug("Registered shutdown hook");
         if(snapshotableList != null) {
-            for (Snapshotable snapshotable : snapshotableList) {
-                if (snapshotable instanceof Timer) {
-                    TimerPanel timerPanel = getProgramGlobalObject(TimerPanel.class);
-                    timerPanel.addSingleTimerPanel((Timer) snapshotable);
-                }
+            postProcessSnapshotableList(snapshotableList);
+        }
+    }
+
+    private void postProcessSnapshotableList(List<Snapshotable> snapshotableList) {
+        List<ExtendedTimer> timerList = new LinkedList<>();
+        for (Snapshotable snapshotable : snapshotableList) {
+            if (snapshotable instanceof ExtendedTimer) {
+                timerList.add((ExtendedTimer) snapshotable);
+                TimerPanel timerPanel = getProgramGlobalObject(TimerPanel.class);
+                timerPanel.addSingleTimerPanel((ExtendedTimer) snapshotable);
             }
         }
+        Map<Integer, Integer> idMap = TimerManager.getInstance().reCalcTimerIds(timerList);
+        ActionLogManager.getInstance().remapTimerIds(idMap);
+        logger.logDebug("timerCount=" + TimerManager.getInstance().getTimerCount() + ",maxTimerId=" + TimerManager.getInstance().getMaxTimerId());
     }
 
     public void updateSnapshotDir() {
