@@ -1,5 +1,7 @@
 package com.adam.swing_project.library.snapshot;
 
+import com.adam.swing_project.library.common.Tuple;
+
 public class SnapshotConstants {
 
     /**
@@ -20,16 +22,31 @@ public class SnapshotConstants {
     public static final byte SNAPSHOT_UNIT_TYPE_DOUBLE = 7;
 
     /**
-     * 不定长类型
+     * 不定长和其他类型
      */
     public static final byte SNAPSHOT_UNIT_TYPE_STRING = 8;
     public static final byte SNAPSHOT_UNIT_TYPE_OBJECT = 9;
     public static final byte SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION = 10;
+    public static final byte SNAPSHOT_UNIT_TYPE_ENUM = 11;
 
     /**
      * 数组类型掩码
      */
     public static final byte SNAPSHOT_UNIT_TYPE_ARRAY_MASK = (byte) (1 << 7);
     public static final byte SNAPSHOT_UNIT_TYPE_ARRAY_STRING = SNAPSHOT_UNIT_TYPE_STRING | SNAPSHOT_UNIT_TYPE_ARRAY_MASK;
+
+    public static final Tuple<Class<?>,Byte>[] BASIC_CLASS_UNIT_TYPE_TUPLES = new Tuple[]{
+            new Tuple<>(Boolean.class, SNAPSHOT_UNIT_TYPE_BOOLEAN),
+            new Tuple<>(Byte.class, SNAPSHOT_UNIT_TYPE_BYTE),
+            new Tuple<>(Short.class, SNAPSHOT_UNIT_TYPE_SHORT),
+            new Tuple<>(Character.class, SNAPSHOT_UNIT_TYPE_CHAR),
+            new Tuple<>(Integer.class, SNAPSHOT_UNIT_TYPE_INT),
+            new Tuple<>(Long.class, SNAPSHOT_UNIT_TYPE_LONG),
+            new Tuple<>(Float.class, SNAPSHOT_UNIT_TYPE_FLOAT),
+            new Tuple<>(Double.class, SNAPSHOT_UNIT_TYPE_DOUBLE),
+            new Tuple<>(String.class, SNAPSHOT_UNIT_TYPE_STRING),
+            new Tuple<>(String[].class, SNAPSHOT_UNIT_TYPE_ARRAY_STRING),
+            new Tuple<>(Enum.class, SNAPSHOT_UNIT_TYPE_ENUM)
+    };
 
 }

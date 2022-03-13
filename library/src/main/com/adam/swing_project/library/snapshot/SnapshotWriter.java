@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
@@ -17,6 +18,13 @@ import java.util.stream.Collectors;
  * 对象类型要在type字段后指定类型表的索引
  */
 public class SnapshotWriter {
+
+    private static final Comparator<Class<?>> CLASS_COMPARATOR = Comparator.comparingInt(Object::hashCode);
+    private static final Class[] SUPPORTED_BASIC_CLASSES = new Class[]{Integer.class, Long.class, Byte.class, Boolean.class,
+            String.class, String[].class, Enum.class};
+    static {
+        Arrays.<Class<?>>sort(SUPPORTED_BASIC_CLASSES, CLASS_COMPARATOR);
+    }
 
     private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     private Class[] objectClassArray;
@@ -31,6 +39,21 @@ public class SnapshotWriter {
 
     public static SnapshotWriter writer(Class[] classArray) {
         return new SnapshotWriter(classArray);
+    }
+
+    /**
+     * 支持序列化写入的基本类型(除Snapshotable类型以外可序列化的类型)
+     * @see SnapshotReader#getSupportedBasicUnitType()
+     */
+    public static Class[] getSupportedBasicClass() {
+        return SUPPORTED_BASIC_CLASSES;
+    }
+
+    /**
+     * @see SnapshotReader#isSupportedBasicUnitType(byte)
+     */
+    public static boolean isSupportedBasicClass(Class<?> clazz) {
+        return Arrays.<Class<?>>binarySearch(SUPPORTED_BASIC_CLASSES, clazz, CLASS_COMPARATOR) != -1;
     }
 
     public SnapshotWriter writeClassTable() {
@@ -79,11 +102,21 @@ public class SnapshotWriter {
         return this;
     }
 
+    public SnapshotWriter writeBoolean(boolean bv) {
+        writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_BOOLEAN);
+        writeByteInternal(bv ? (byte)1 : (byte)0);
+        return this;
+    }
+
     public SnapshotWriter writeString(String sv) {
         writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_STRING);
-        byte[] svBytes = sv.getBytes(StandardCharsets.UTF_8);
-        writeIntInternal(svBytes.length);
-        writeByteArrayInternal(svBytes);
+        writeStringInternal(sv);
+        return this;
+    }
+
+    public SnapshotWriter writeEnum(Enum<?> ev) {
+        writeByteInternal(SnapshotConstants.SNAPSHOT_UNIT_TYPE_ENUM);
+        writeEnumInternal(ev);
         return this;
     }
 
@@ -94,6 +127,44 @@ public class SnapshotWriter {
             writeString(sv);
         }
         return this;
+    }
+
+    public SnapshotWriter writeCommonObject(Object object) {
+        Assert.notNull(object);
+        if(object instanceof Snapshotable) {
+            writeSnapshotableObject((Snapshotable) object);
+        } else if(isSupportedBasicClass(object.getClass())) {
+            writeCommonBasicObject(object);
+        } else {
+            throw new SnapshotException("Invalid switch!");
+        }
+        return this;
+    }
+
+    public SnapshotWriter writeCommonBasicObject(Object object) {
+        Assert.isTrue(object != null && isSupportedBasicClass(object.getClass()), SnapshotException.class, "Object " + object + " is not a supported basic object");
+        if(object instanceof Integer) {
+            return writeInt((int)object);
+        }
+        if(object instanceof Long) {
+            return writeLong((long)object);
+        }
+        if(object instanceof Byte) {
+            return writeByte((byte)object);
+        }
+        if(object instanceof Boolean) {
+            return writeBoolean((boolean)object);
+        }
+        if(object instanceof String) {
+            return writeString((String)object);
+        }
+        if(object instanceof String[]) {
+            return writeStringArray((String[])object);
+        }
+        if(object instanceof Enum) {
+            return writeEnum((Enum<?>)object);
+        }
+        throw new SnapshotException("Invalid switch!");
     }
 
     public SnapshotWriter writeSnapshotableObject(Snapshotable snapshotable) {
@@ -132,6 +203,17 @@ public class SnapshotWriter {
         byteArrayOutputStream.write((int)(lv >> 16));
         byteArrayOutputStream.write((int)(lv >> 8));
         byteArrayOutputStream.write((int)(lv));
+    }
+
+    private void writeStringInternal(String sv) {
+        byte[] svBytes = sv.getBytes(StandardCharsets.UTF_8);
+        writeIntInternal(svBytes.length);
+        writeByteArrayInternal(svBytes);
+    }
+
+    private void writeEnumInternal(Enum<?> ev) {
+        writeStringInternal(ev.getClass().getName());
+        writeIntInternal(ev.ordinal());
     }
 
     private SnapshotWriter writeByteArrayInternal(byte[] bytes) {

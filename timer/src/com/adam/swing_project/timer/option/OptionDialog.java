@@ -1,5 +1,6 @@
 package com.adam.swing_project.timer.option;
 
+import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.timer.component.ApplicationManager;
@@ -11,9 +12,8 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
-import java.util.Queue;
 
 public class OptionDialog extends JDialog {
     private class OptionDialogItem {
@@ -27,8 +27,15 @@ public class OptionDialog extends JDialog {
         void addTrackedOptionComponent(JComponent jComponent, String identifier) {
             trackedOptionComponents.add(new TrackedOptionComponent(jComponent, identifier));
         }
+        void addTrackedOptionComponent(JComponent jComponent, String identifier, TrackedComponentProcessor trackedComponentProcessor) {
+            TrackedOptionComponent trackedOptionComponent = new TrackedOptionComponent(jComponent, identifier, trackedComponentProcessor);
+            trackedOptionComponents.add(trackedOptionComponent);
+        }
         void addTrackedOptionComponent(JComponent jComponent, String identifier, TrackedComponentAction trackedComponentAction) {
-            TrackedOptionComponent trackedOptionComponent = new TrackedOptionComponent(jComponent, identifier);
+            addTrackedOptionComponent(jComponent, identifier, null, trackedComponentAction);
+        }
+        void addTrackedOptionComponent(JComponent jComponent, String identifier, TrackedComponentProcessor trackedComponentProcessor, TrackedComponentAction trackedComponentAction) {
+            TrackedOptionComponent trackedOptionComponent = new TrackedOptionComponent(jComponent, identifier, trackedComponentProcessor);
             trackedOptionComponent.addTrackedComponentAction(trackedComponentAction);
             trackedOptionComponents.add(trackedOptionComponent);
         }
@@ -99,6 +106,9 @@ public class OptionDialog extends JDialog {
             if(jComponent instanceof JTextComponent) {
                 return ((JTextComponent) jComponent).getText();
             }
+            if(jComponent instanceof JRadioButton) {
+                return ((JRadioButton)jComponent).isSelected();
+            }
             return null;
         }
 
@@ -108,6 +118,28 @@ public class OptionDialog extends JDialog {
             return !((currentValue == initialValue) || (currentValue != null && currentValue.equals(initialValue)));
         }
 
+    }
+
+    /**
+     * 单选按钮的定制处理器：一个单选按钮组中只有一个按钮可被选中，只认可其中由未选中到选中的按钮触发事件。
+     */
+    private static class SingleChosenRadioButtonProcessor<T> implements TrackedComponentProcessor {
+
+        private final Map<JRadioButton, T> radioValueMap;
+
+        SingleChosenRadioButtonProcessor(Map<JRadioButton, T> radioValueMap) {
+            this.radioValueMap = radioValueMap;
+        }
+
+        @Override
+        public Object getValue(JComponent jComponent) {
+            return radioValueMap.get(((JRadioButton) jComponent));
+        }
+
+        @Override
+        public boolean valueChanged(Object initialValue, JComponent jComponent) {
+            return ((JRadioButton)jComponent).isSelected();
+        }
     }
 
     private interface TrackedComponentAction {
@@ -214,6 +246,24 @@ public class OptionDialog extends JDialog {
         statButtonGroup.add(statDisableRadio);
         statButtonGroup.add(statStartDayRadio);
         statButtonGroup.add(statEndDayRadio);
+        OptionConstants.StatDefaultMethod generalStatDefault = OptionManager.getInstance().getOptionValueOrDefault(
+                OptionConstants.OPTION_GENERAL_STAT_DEFAULT, OptionConstants.StatDefaultMethod.class,
+                OptionConstants.StatDefaultMethod.STAT_BY_START_DAY);
+        Map<JRadioButton, OptionConstants.StatDefaultMethod> statDefaultRadioMap = new HashMap<>();
+        statDefaultRadioMap.put(statDisableRadio, OptionConstants.StatDefaultMethod.DISABLED);
+        statDefaultRadioMap.put(statStartDayRadio, OptionConstants.StatDefaultMethod.STAT_BY_START_DAY);
+        statDefaultRadioMap.put(statEndDayRadio, OptionConstants.StatDefaultMethod.STAT_BY_END_DAY);
+        switch (generalStatDefault) {
+            case DISABLED:
+                statDisableRadio.setSelected(true);
+                break;
+            case STAT_BY_START_DAY:
+                statStartDayRadio.setSelected(true);
+                break;
+            case STAT_BY_END_DAY:
+                statEndDayRadio.setSelected(true);
+                break;
+        }
         gridBagConstraints = new GridBagConstraints(0,0,1,1,0,0,
                 GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
         statInnerComp.add(statDisableRadio, gridBagConstraints);
@@ -228,14 +278,17 @@ public class OptionDialog extends JDialog {
                 GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0,0,0,0),0,0);
         generalPane.add(statComp, gridBagConstraints);
         optionDialogItem = new OptionDialogItem("常规", generalPane);
-        optionDialogItem.addTrackedOptionComponent(workingDirField, OptionConstants.OPTION_ROOT_WORK_DIR, new TrackedComponentAction() {
-            @Override
-            public void onValueChange(JComponent jComponent, Object currentValue) {
-                String workingDir = (String) currentValue;
-                FileManager.getInstance().updateAppRootDir(workingDir);
-                ApplicationManager.getInstance().updateSnapshotDir();
-            }
+        optionDialogItem.addTrackedOptionComponent(workingDirField, OptionConstants.OPTION_ROOT_WORK_DIR, (jComponent, currentValue) -> {
+            String workingDir = (String) currentValue;
+            FileManager.getInstance().updateAppRootDir(workingDir);
+            ApplicationManager.getInstance().updateSnapshotDir();
         });
+        optionDialogItem.addTrackedOptionComponent(statDisableRadio, OptionConstants.OPTION_GENERAL_STAT_DEFAULT,
+                new SingleChosenRadioButtonProcessor<>(statDefaultRadioMap));
+        optionDialogItem.addTrackedOptionComponent(statStartDayRadio, OptionConstants.OPTION_GENERAL_STAT_DEFAULT,
+                new SingleChosenRadioButtonProcessor<>(statDefaultRadioMap));
+        optionDialogItem.addTrackedOptionComponent(statEndDayRadio, OptionConstants.OPTION_GENERAL_STAT_DEFAULT,
+                new SingleChosenRadioButtonProcessor<>(statDefaultRadioMap));
         itemList.add(optionDialogItem);
 
         Box advancedPane = Box.createVerticalBox();

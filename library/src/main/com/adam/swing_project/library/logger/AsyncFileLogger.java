@@ -216,6 +216,8 @@ public class AsyncFileLogger extends Logger implements EarlyExposed{
                     shutdownHook.setPriority(Integer.MIN_VALUE);
                     ManagedShutdownHook.getInstance().registerShutdownHook(shutdownHook);
                 }
+                doLog("");
+                doLog("--------------------------------------------");
             }
         }
     }

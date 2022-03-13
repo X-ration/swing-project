@@ -1,6 +1,7 @@
 package com.adam.swing_project.library.snapshot;
 
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.common.Tuple;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -10,9 +11,26 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class SnapshotReader {
 
+    private static final byte[] SUPPORTED_BASIC_UNIT_TYPES = new byte[SnapshotWriter.getSupportedBasicClass().length];
+    static {
+        Class[] classes = SnapshotWriter.getSupportedBasicClass();
+        for(int i=0;i< classes.length;i++) {
+            boolean foundType = false;
+            for(Tuple<Class<?>,Byte> basicTuple: SnapshotConstants.BASIC_CLASS_UNIT_TYPE_TUPLES) {
+                if(basicTuple.getK() == classes[i]) {
+                    SUPPORTED_BASIC_UNIT_TYPES[i] = basicTuple.getV();
+                    foundType = true;
+                    break;
+                }
+            }
+            Assert.isTrue(foundType, "Invalid basic class " + classes[i]);
+        }
+        Arrays.sort(SUPPORTED_BASIC_UNIT_TYPES);
+    }
     private Class[] objectClassArray;
     private InputStream inputStream;
     private static final int BUFFER_SIZE = 1024;
@@ -40,6 +58,16 @@ public class SnapshotReader {
         this.inputStream = inputStream;
     }
 
+    /**
+     * 在Snapshotable对象内部使用
+     * @param data
+     * @param classArray
+     */
+    public SnapshotReader(byte[] data, Class[] classArray) {
+        this(data);
+        this.objectClassArray = classArray;
+    }
+
     public static SnapshotReader reader(byte[] data) {
         return new SnapshotReader(data);
     }
@@ -49,13 +77,18 @@ public class SnapshotReader {
     }
 
     /**
-     * 在Snapshotable对象内部使用
-     * @param data
-     * @param classArray
+     * 支持序列化写入的基本类型(除Snapshotable类型以外可序列化的类型)
+     * @see SnapshotWriter#getSupportedBasicClass()
      */
-    public SnapshotReader(byte[] data, Class[] classArray) {
-        this(data);
-        this.objectClassArray = classArray;
+    public static byte[] getSupportedBasicUnitType() {
+        return SUPPORTED_BASIC_UNIT_TYPES;
+    }
+
+    /**
+     * @see SnapshotWriter#isSupportedBasicClass(Class)
+     */
+    public static boolean isSupportedBasicUnitType(byte unitType) {
+        return Arrays.binarySearch(SUPPORTED_BASIC_UNIT_TYPES, unitType) != -1;
     }
 
     private void requireTypeInternal(byte typeRead, byte... types) {
@@ -128,21 +161,29 @@ public class SnapshotReader {
         }
     }
 
+    public boolean readBoolean() {
+        try {
+            requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_BOOLEAN);
+            return readBooleanInternal();
+        } catch (ReadEndException e) {
+            throw new SnapshotException(e);
+        }
+    }
+
     public String readString() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_STRING);
-            int length = readIntInternal();
-            Assert.isTrue(length > 0, "非法的长度值");
-            byte[] strBytes;
-            if (length <= BUFFER_SIZE) {
-                readAFewBytes(length);
-                strBytes = new byte[length];
-                System.arraycopy(buffer, 0, strBytes, 0, length);
-            } else {
-                strBytes = readMoreBytes(length);
-            }
-            return new String(strBytes, StandardCharsets.UTF_8);
+            return readStringInternal();
         } catch (ReadEndException e) {
+            throw new SnapshotException(e);
+        }
+    }
+
+    public Enum<?> readEnum() {
+        try {
+            requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_ENUM);
+            return readEnumInternal();
+        } catch (ReadEndException | ClassNotFoundException e) {
             throw new SnapshotException(e);
         }
     }
@@ -150,37 +191,140 @@ public class SnapshotReader {
     public String[] readStringArray() {
         try {
             requireType(SnapshotConstants.SNAPSHOT_UNIT_TYPE_ARRAY_STRING);
-            int arrayLength = readIntInternal();
-            String[] sArray = new String[arrayLength];
-            for(int i=0;i<arrayLength;i++) {
-                sArray[i] = readString();
-            }
-            return sArray;
+            return readStringArrayInternal();
         } catch (ReadEndException e) {
             e.printStackTrace();
             throw new SnapshotException(e);
         }
     }
 
-//    public Snapshotable readSnapshotableObject() {
-//        return readSnapshotableObject(null);
-//    }
+    public Object readCommonBasicObject() {
+        try {
+            readAFewBytes(1);
+            byte unitType = buffer[0];
+            Assert.isTrue(isSupportedBasicUnitType(unitType), "Not a supported basic unit type: " + buffer[0]);
+            return readCommonBasicObjectInternal(unitType);
+        } catch (ReadEndException | ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new SnapshotException(e);
+        }
+    }
 
     /**
      * 适应使用内部类的情况，由根对象生成内部类实例后传递给方法参数
      * @return
      */
     public Snapshotable readSnapshotableObject() {
-//    public Snapshotable readSnapshotableObject(Snapshotable object) {
         byte typeRead;
-        String instantiationMethodName = null;
         try {
             typeRead = readByteInternal();
             requireTypeInternal(typeRead, SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT, SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION);
         } catch (ReadEndException e) {
+            //序列化以对象为基础，所以忽略ReadEndException使序列化过程正常结束
             return null;
         }
+        return readSnapshotableObjectInternal(typeRead);
+    }
 
+    public Object readCommonObject() {
+        try {
+            byte type = readByteInternal();
+            if(isSupportedBasicUnitType(type)) {
+                return readCommonBasicObjectInternal(type);
+            } else if(type == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT || type == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION) {
+                return readSnapshotableObjectInternal(type);
+            } else {
+                throw new SnapshotException("Invalid switch!");
+            }
+        } catch (ReadEndException | ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new SnapshotException(e);
+        }
+    }
+
+    private int readIntInternal() throws ReadEndException {
+        readAFewBytes(4);
+        return (((int)buffer[0] & 0xFF) << 24) | (((int)buffer[1] & 0xFF) << 16) |
+                (((int)buffer[2] & 0xFF) << 8) | (((int)buffer[3] & 0xFF));
+    }
+
+    private long readLongInternal() throws ReadEndException {
+        readAFewBytes(8);
+        return (((long)buffer[0] & 0xFF) << 56) | (((long)buffer[1] & 0xFF) << 48) |
+                (((long)buffer[2] & 0xFF) << 40) | (((long)buffer[3] & 0xFF) << 32) |
+                (((long)buffer[4] & 0xFF) << 24) | (((long)buffer[5] & 0xFF) << 16) |
+                (((long)buffer[6] & 0xFF) << 8) | (((long)buffer[7] & 0xFF));
+    }
+
+    private byte readByteInternal() throws ReadEndException {
+        readAFewBytes(1);
+        return buffer[0];
+    }
+
+    private boolean readBooleanInternal() throws ReadEndException {
+        byte bv = readByteInternal();
+        return bv == (byte)1;
+    }
+
+    private String readStringInternal() throws ReadEndException {
+        int length = readIntInternal();
+        Assert.isTrue(length > 0, "非法的长度值");
+        byte[] strBytes;
+        if (length <= BUFFER_SIZE) {
+            readAFewBytes(length);
+            strBytes = new byte[length];
+            System.arraycopy(buffer, 0, strBytes, 0, length);
+        } else {
+            strBytes = readMoreBytes(length);
+        }
+        return new String(strBytes, StandardCharsets.UTF_8);
+    }
+
+    private Enum<?> readEnumInternal() throws ReadEndException, ClassNotFoundException {
+        String enumClassName = readStringInternal();
+        Class<?> clazz = Class.forName(enumClassName);
+        Assert.isTrue(clazz.isEnum(), "Not a valid enum class '" + enumClassName + "'");
+        Class<? extends Enum<?>> enumClass = (Class<? extends Enum<?>>) clazz;
+        int ordinal = readIntInternal();
+        return enumClass.getEnumConstants()[ordinal];
+    }
+
+    private String[] readStringArrayInternal() throws ReadEndException {
+        int arrayLength = readIntInternal();
+        String[] sArray = new String[arrayLength];
+        for(int i=0;i<arrayLength;i++) {
+            sArray[i] = readString();
+        }
+        return sArray;
+    }
+
+    private Object readCommonBasicObjectInternal(byte unitType) throws ReadEndException, ClassNotFoundException {
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_INT) {
+            return readIntInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_LONG) {
+            return readLongInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_BYTE) {
+            return readByteInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_BOOLEAN) {
+            return readBooleanInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_STRING) {
+            return readStringInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_ARRAY_STRING) {
+            return readStringArrayInternal();
+        }
+        if(unitType == SnapshotConstants.SNAPSHOT_UNIT_TYPE_ENUM) {
+            return readEnumInternal();
+        }
+        throw new SnapshotException("Invalid switch!");
+    }
+
+    private Snapshotable readSnapshotableObjectInternal(byte typeRead) {
+        String instantiationMethodName = null;
         try {
             if (typeRead == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION) {
                 instantiationMethodName = readString();
@@ -223,25 +367,6 @@ public class SnapshotReader {
         }
     }
 
-
-    private int readIntInternal() throws ReadEndException {
-        readAFewBytes(4);
-        return (((int)buffer[0] & 0xFF) << 24) | (((int)buffer[1] & 0xFF) << 16) |
-                (((int)buffer[2] & 0xFF) << 8) | (((int)buffer[3] & 0xFF));
-    }
-
-    private long readLongInternal() throws ReadEndException {
-        readAFewBytes(8);
-        return (((long)buffer[0] & 0xFF) << 56) | (((long)buffer[1] & 0xFF) << 48) |
-                (((long)buffer[2] & 0xFF) << 40) | (((long)buffer[3] & 0xFF) << 32) |
-                (((long)buffer[4] & 0xFF) << 24) | (((long)buffer[5] & 0xFF) << 16) |
-                (((long)buffer[6] & 0xFF) << 8) | (((long)buffer[7] & 0xFF));
-    }
-
-    private byte readByteInternal() throws ReadEndException {
-        readAFewBytes(1);
-        return buffer[0];
-    }
 
     /**
      * 读取少于缓冲数组大小的字节数个字节
