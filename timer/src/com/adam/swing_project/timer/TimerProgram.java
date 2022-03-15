@@ -25,6 +25,7 @@ import java.util.List;
 
 public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
+    private static Logger LOGGER;
 
     public static void main(String[] args) {
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
@@ -35,16 +36,21 @@ public class TimerProgram extends JFrame{
         loggerList.add(ConsoleLogger.createLogger(TimerProgram.class));
         loggerList.add(RollingFileLogger.createLogger(TimerProgram.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
         LoggerFactory.setupLoggers(loggerList);
-        ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
-        TimerAppInfo appInfo;
+        LOGGER = LoggerFactory.getLogger(TimerProgram.class);
         try {
-            appInfo = new TimerAppInfo(argumentResolver);
-            ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
+            ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
+            TimerAppInfo appInfo;
+            try {
+                appInfo = new TimerAppInfo(argumentResolver);
+                ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+            new TimerProgram(appInfo);
+        } catch (Exception e) {
+            LOGGER.logException(e, "TimerProgram Exception!");
         }
-        new TimerProgram(appInfo);
     }
 
     public TimerProgram(TimerAppInfo appInfo) {

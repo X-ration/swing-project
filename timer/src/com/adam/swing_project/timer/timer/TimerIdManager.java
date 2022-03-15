@@ -2,22 +2,20 @@ package com.adam.swing_project.timer.timer;
 
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
-import com.adam.swing_project.library.snapshot.CustomInstantiationSnapshotable;
-import com.adam.swing_project.library.snapshot.SnapshotManager;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TimerManager {
+public class TimerIdManager {
 
-    private static final TimerManager instance = new TimerManager();
+    private static final TimerIdManager instance = new TimerIdManager();
     private final Logger logger = LoggerFactory.getLogger(this);
 
     private int timerCount;
     private int maxTimerId;
 
-    private TimerManager() {
+    private TimerIdManager() {
     }
 
     /**
@@ -52,7 +50,7 @@ public class TimerManager {
         return idMap;
     }
 
-    public static TimerManager getInstance() {
+    public static TimerIdManager getInstance() {
         return instance;
     }
 

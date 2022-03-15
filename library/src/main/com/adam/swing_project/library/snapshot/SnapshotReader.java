@@ -338,6 +338,7 @@ public class SnapshotReader {
             Snapshotable object;
             if (typeRead == SnapshotConstants.SNAPSHOT_UNIT_TYPE_OBJECT_CUSTOM_INSTANTIATION) {
                 Method method = objectClass.getDeclaredMethod(instantiationMethodName, null);
+                method.setAccessible(true);
                 object = (Snapshotable) method.invoke(null, null);
             } else {
                 Constructor<Snapshotable> constructor = objectClass.getDeclaredConstructor(null);

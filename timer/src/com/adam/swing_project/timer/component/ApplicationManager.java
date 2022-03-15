@@ -8,10 +8,10 @@ import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.stat.ActionLogManager;
+import com.adam.swing_project.timer.timer.ActionLogManager;
 import com.adam.swing_project.timer.thread.ThreadManager;
 import com.adam.swing_project.timer.timer.ExtendedTimer;
-import com.adam.swing_project.timer.timer.TimerManager;
+import com.adam.swing_project.timer.timer.TimerIdManager;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -62,9 +62,9 @@ public class ApplicationManager {
                 timerPanel.addSingleTimerPanel((ExtendedTimer) snapshotable);
             }
         }
-        Map<Integer, Integer> idMap = TimerManager.getInstance().reCalcTimerIds(timerList);
+        Map<Integer, Integer> idMap = TimerIdManager.getInstance().reCalcTimerIds(timerList);
         ActionLogManager.getInstance().remapTimerIds(idMap);
-        logger.logDebug("timerCount=" + TimerManager.getInstance().getTimerCount() + ",maxTimerId=" + TimerManager.getInstance().getMaxTimerId());
+        logger.logDebug("timerCount=" + TimerIdManager.getInstance().getTimerCount() + ",maxTimerId=" + TimerIdManager.getInstance().getMaxTimerId());
     }
 
     public void updateSnapshotDir() {

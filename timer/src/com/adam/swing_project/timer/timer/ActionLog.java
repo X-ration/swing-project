@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.stat;
+package com.adam.swing_project.timer.timer;
 
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.datetime.Time;

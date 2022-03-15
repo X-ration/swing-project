@@ -1,4 +1,4 @@
-package com.adam.swing_project.timer.stat;
+package com.adam.swing_project.timer.timer;
 
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.logger.Logger;
@@ -12,7 +12,8 @@ import java.util.*;
  * ActionLog全局控制器，单例模式
  * 该类保存的ActionLog会不断增多，可能占用内存
  */
-public class ActionLogManager implements CustomInstantiationSnapshotable {
+public class ActionLogManager //implements CustomInstantiationSnapshotable
+{
 
     private static final ActionLogManager instance = new ActionLogManager();
     private final Logger logger = LoggerFactory.getLogger(this);
@@ -20,7 +21,7 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
     private final Collection<Date> actionLogDateCollection = new LinkedList<>();
 
     private ActionLogManager() {
-        SnapshotManager.getInstance().registerSnapshotable(this);
+//        SnapshotManager.getInstance().registerSnapshotable(this);
     }
 
     public void addActionLog(ActionLog actionLog) {
@@ -59,6 +60,7 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
      * 重新映射ActionLog的timerId值，只在初始化阶段调用
      * @param timerIdMap
      */
+    //todo 此方法似乎没有必要
     public void remapTimerIds(Map<Integer, Integer> timerIdMap) {
         int queueSize = actionLogQueue.size();
         while(queueSize-->0) {
@@ -83,12 +85,12 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
         return instance;
     }
 
-    @Override
+//    @Override
     public String instantiationMethodName() {
         return "getInstance";
     }
 
-    @Override
+//    @Override
     public byte[] writeToSnapshot() {
         SnapshotWriter writer = SnapshotWriter.writer(new Class[]{ActionLog.class});
         writer.writeClassTable();
@@ -103,7 +105,7 @@ public class ActionLogManager implements CustomInstantiationSnapshotable {
         return writer.toByteArray();
     }
 
-    @Override
+//    @Override
     public void restoreFromSnapshot(byte[] bytes) {
         SnapshotReader reader = SnapshotReader.reader(bytes);
         reader.readClassTable();
