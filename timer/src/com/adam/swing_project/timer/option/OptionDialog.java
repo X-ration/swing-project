@@ -8,9 +8,12 @@ import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.timer.component.OptionManager;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -109,6 +112,9 @@ public class OptionDialog extends JDialog {
             if(jComponent instanceof JRadioButton) {
                 return ((JRadioButton)jComponent).isSelected();
             }
+            if(jComponent instanceof JCheckBox) {
+                return ((JCheckBox)jComponent).isSelected();
+            }
             return null;
         }
 
@@ -118,6 +124,20 @@ public class OptionDialog extends JDialog {
             return !((currentValue == initialValue) || (currentValue != null && currentValue.equals(initialValue)));
         }
 
+    }
+
+    private static class DefaultTrackedComponentProcessorForRoot implements TrackedComponentProcessor {
+        static TrackedComponentProcessor INSTANCE = new DefaultTrackedComponentProcessorForRoot();
+
+        @Override
+        public Object getValue(JComponent jComponent) {
+            return String.valueOf(DefaultTrackedComponentProcessor.INSTANCE.getValue(jComponent));
+        }
+
+        @Override
+        public boolean valueChanged(Object initialValue, JComponent jComponent) {
+            return DefaultTrackedComponentProcessor.INSTANCE.valueChanged(initialValue, jComponent);
+        }
     }
 
     /**
@@ -291,12 +311,38 @@ public class OptionDialog extends JDialog {
                 new SingleChosenRadioButtonProcessor<>(statDefaultRadioMap));
         itemList.add(optionDialogItem);
 
-        Box advancedPane = Box.createVerticalBox();
-        JCheckBox advancedDebug = new JCheckBox("输出日志");
-        advancedDebug.setEnabled(false);
-        advancedDebug.setSelected(true);
-        advancedPane.add(advancedDebug);
+        JPanel advancedPane = new JPanel(new GridBagLayout());
+        JPanel advancedLogComp = new JPanel(new BorderLayout()), advancedLogInnerComp = new JPanel(new GridBagLayout());
+        advancedLogComp.setBorder(BorderFactory.createTitledBorder("日志选项"));
+        JCheckBox advancedLogFileEnabled = new JCheckBox("输出日志文件(重启生效)"),
+                advancedLogDebugEnabled = new JCheckBox("启用调试级别");
+        boolean logFileEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, String.class, "true"));
+        boolean logDebugEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, String.class, "false"));
+        advancedLogFileEnabled.setSelected(logFileEnabled);
+        advancedLogDebugEnabled.setSelected(logDebugEnabled);
+        gridBagConstraints = new GridBagConstraints(0,0,1,1,0,0,
+                GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
+        advancedLogInnerComp.add(advancedLogFileEnabled, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints(0,1,1,1,0,0,
+                GridBagConstraints.WEST,GridBagConstraints.NONE,new Insets(0,0,0,0),0,0);
+        advancedLogInnerComp.add(advancedLogDebugEnabled, gridBagConstraints);
+        advancedLogComp.add(advancedLogInnerComp, BorderLayout.WEST);
+        gridBagConstraints = new GridBagConstraints(0,0,1,1,1,0,
+                GridBagConstraints.CENTER,GridBagConstraints.HORIZONTAL,new Insets(0,0,0,0),0,0);
+        advancedPane.add(advancedLogComp, gridBagConstraints);
         optionDialogItem = new OptionDialogItem("高级", advancedPane);
+        optionDialogItem.addTrackedOptionComponent(advancedLogFileEnabled, OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, DefaultTrackedComponentProcessorForRoot.INSTANCE);
+        optionDialogItem.addTrackedOptionComponent(advancedLogDebugEnabled, OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, DefaultTrackedComponentProcessorForRoot.INSTANCE, new TrackedComponentAction() {
+            @Override
+            public void onValueChange(JComponent jComponent, Object currentValue) {
+                boolean logDebugEnabled = Boolean.parseBoolean((String) currentValue);
+                if(logDebugEnabled) {
+                    LoggerFactory.setupGlobalLevel(Logger.LogLevel.DEBUG);
+                } else {
+                    LoggerFactory.setupGlobalLevel(Logger.LogLevel.INFO);
+                }
+            }
+        });
         itemList.add(optionDialogItem);
         return itemList;
     }

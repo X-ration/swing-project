@@ -25,8 +25,11 @@ public class LoggerFactory {
         loggerList.addAll(loggers);
     }
 
+    public static void setupGlobalLevel(Logger.LogLevel logLevel) {
+        Logger.setGlobalLogLevel(logLevel);
+    }
+
     public static Logger getLogger(Object object) {
-        Assert.isTrue(loggerList.size() == 2, "exception");
         initLoggers();
         return new CombinedLogger(object, loggerList.toArray(new Logger[0]));
     }

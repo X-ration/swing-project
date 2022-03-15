@@ -12,6 +12,7 @@ import com.adam.swing_project.timer.component.RootConfigStorage;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
+import com.adam.swing_project.timer.option.OptionConstants;
 import com.adam.swing_project.timer.option.OptionDialog;
 
 import javax.swing.*;
@@ -31,10 +32,20 @@ public class TimerProgram extends JFrame{
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
         RootConfigStorage.getInstance().init(argumentResolver);
         FileManager.getInstance().init(argumentResolver);
-        File logFile = FileManager.getInstance().requireSubFile("swing-timer.log");
+
+        boolean logFileEnabled = Boolean.parseBoolean(RootConfigStorage.getInstance().getRootConfigOrPutDefault(OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, "true"));
+        boolean logDebugEnabled = Boolean.parseBoolean(RootConfigStorage.getInstance().getRootConfigOrPutDefault(OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, "false"));
+        Logger.LogLevel defaultLogLevel = Logger.LogLevel.INFO;
+        if(logDebugEnabled) {
+            defaultLogLevel = Logger.LogLevel.DEBUG;
+        }
+        LoggerFactory.setupGlobalLevel(defaultLogLevel);
         List<Logger> loggerList = new LinkedList<>();
         loggerList.add(ConsoleLogger.createLogger(TimerProgram.class));
-        loggerList.add(RollingFileLogger.createLogger(TimerProgram.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
+        if(logFileEnabled) {
+            File logFile = FileManager.getInstance().requireSubFile("swing-timer.log");
+            loggerList.add(RollingFileLogger.createLogger(TimerProgram.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
+        }
         LoggerFactory.setupLoggers(loggerList);
         LOGGER = LoggerFactory.getLogger(TimerProgram.class);
         try {

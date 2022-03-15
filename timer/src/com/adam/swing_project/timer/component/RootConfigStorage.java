@@ -44,10 +44,19 @@ public class RootConfigStorage {
         return rootConfigMap.get(rootConfigKey);
     }
 
+    public String getRootConfigOrPutDefault(String rootConfigKey, String defaultValue) {
+        String value = getRootConfig(rootConfigKey);
+        if(value == null) {
+            value = defaultValue;
+            updateRootConfig(rootConfigKey, value);
+        }
+        return value;
+    }
+
     public String updateRootConfig(String rootConfigKey, String rootConfigValue) {
         String oldValue = rootConfigMap.get(rootConfigKey);
         if(oldValue != null && oldValue.equals(rootConfigValue)) {
-            return null;
+            return oldValue;
         }
         rootConfigMap.put(rootConfigKey, rootConfigValue);
         try {
