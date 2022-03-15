@@ -10,7 +10,6 @@ import java.util.List;
 
 /**
  * LoggerFactory使用CombinedLogger，根据用户配置启用console/file logger。
- * todo 开发阶段先写死loggerList，后续考虑配置
  */
 public class LoggerFactory {
 

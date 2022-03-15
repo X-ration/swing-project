@@ -67,7 +67,7 @@ public class TimerProgram extends JFrame{
         //托盘
         trayIconManager = TrayIconManager.getInstance();
         trayIconManager.setjFrame(jFrame);
-        trayIconManager.addTrayIconIfSupported();
+        trayIconManager.addTrayIconIfSupported(titleString);
 
         //菜单栏
         JMenuBar jMenuBar = new JMenuBar();

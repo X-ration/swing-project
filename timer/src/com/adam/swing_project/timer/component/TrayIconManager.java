@@ -31,7 +31,7 @@ public class TrayIconManager {
         return isSupportSystemTray;
     }
 
-    public void addTrayIconIfSupported() {
+    public void addTrayIconIfSupported(String tooltip) {
         if(isSupportSystemTray) {
 //            Font f = new Font("宋体", Font.PLAIN, 12);
 //            UIManager.put("Label.font",f);
@@ -58,6 +58,7 @@ public class TrayIconManager {
 
             PopupMenu trayPopupMenu = new PopupMenu();
             trayIcon = new TrayIcon(IconManager.timer24().getImage());
+            trayIcon.setToolTip(tooltip);
             SystemTray systemTray = SystemTray.getSystemTray();
 
             MenuItem showMainItem = new MenuItem("显示主窗口")
@@ -77,6 +78,7 @@ public class TrayIconManager {
             });
 
             trayIcon.setPopupMenu(trayPopupMenu);
+            trayIcon.setImageAutoSize(true);
             try {
                 systemTray.add(trayIcon);
             } catch (AWTException e) {
