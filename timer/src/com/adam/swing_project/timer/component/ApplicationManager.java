@@ -8,7 +8,6 @@ import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.Snapshotable;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.timer.ActionLogManager;
 import com.adam.swing_project.timer.thread.ThreadManager;
 import com.adam.swing_project.timer.timer.ExtendedTimer;
 import com.adam.swing_project.timer.timer.TimerIdManager;
@@ -25,7 +24,6 @@ public class ApplicationManager {
     private static final ApplicationManager instance = new ApplicationManager();
     private final Logger logger = LoggerFactory.getLogger(this);
     private final List<Object> programGlobalObjectList = new LinkedList<>();
-    private ApplicationArgumentResolver argumentResolver;
 
     public static ApplicationManager getInstance() {
         return instance;
@@ -33,7 +31,6 @@ public class ApplicationManager {
 
     public void init() {
         ThreadManager.getInstance().initThreads();
-        argumentResolver = getProgramGlobalObject(ApplicationArgumentResolver.class);
         updateSnapshotDir();
         //只保留最近的3个快照文件
         SnapshotManager.getInstance().clearSnapshot(3);
@@ -63,7 +60,7 @@ public class ApplicationManager {
             }
         }
         Map<Integer, Integer> idMap = TimerIdManager.getInstance().reCalcTimerIds(timerList);
-        ActionLogManager.getInstance().remapTimerIds(idMap);
+//        ActionLogManager.getInstance().remapTimerIds(idMap);
         logger.logDebug("timerCount=" + TimerIdManager.getInstance().getTimerCount() + ",maxTimerId=" + TimerIdManager.getInstance().getMaxTimerId());
     }
 

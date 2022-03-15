@@ -199,7 +199,7 @@ public class ExtendedTimer extends Timer implements CustomInstantiationSnapshota
             Time resetTime = new Time(0, 0, 0), countingTime = new Time(0, 0, 0);
             resetTime.copyFrom(this.resetTime);
             countingTime.copyFrom(this.countingTime);
-            ActionLog actionLog = new ActionLog(timerId, actionLogType, timerName, countingTime, resetTime);
+            ActionLog actionLog = new ActionLog(actionLogType);
             countingRound.addActionLog(actionLog);
 //        ActionLogManager.getInstance().addActionLog(actionLog);
         }
@@ -210,7 +210,7 @@ public class ExtendedTimer extends Timer implements CustomInstantiationSnapshota
             Time resetTime = new Time(0, 0, 0), countingTime = new Time(0, 0, 0);
             resetTime.copyFrom(this.resetTime);
             countingTime.copyFrom(this.countingTime);
-            ActionLog actionLog = new ActionLog(timerId, actionLogType, timerName, countingTime, resetTime, timeMills);
+            ActionLog actionLog = new ActionLog(actionLogType, timeMills);
             countingRound.addActionLog(actionLog);
 //        ActionLogManager.getInstance().addActionLog(actionLog);
         }
