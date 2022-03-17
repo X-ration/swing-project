@@ -118,7 +118,9 @@ public class TimerStatistic implements CustomInstantiationSnapshotable {
             Date date = new Date(reader.readInt(), reader.readInt(), reader.readInt());
             Time totalResetTime = new Time(reader.readInt(), reader.readInt(), reader.readInt());
             Time totalCountedTime = new Time(reader.readInt(), reader.readInt(), reader.readInt());
-            TimerDayStatistic dayStatistic = new TimerDayStatistic(date, totalResetTime, totalCountedTime);
+            TimerDayStatistic dayStatistic = getDayStatisticOrNew(date);
+            dayStatistic.statResetTime(totalResetTime);
+            dayStatistic.statCountedTime(totalCountedTime);
             dayStatisticMap.put(date, dayStatistic);
         }
     }

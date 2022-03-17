@@ -1,6 +1,5 @@
 package com.adam.swing_project.timer.option;
 
-import com.adam.swing_project.library.assertion.Assert;
 import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.logger.LoggerFactory;
 import com.adam.swing_project.timer.component.ApplicationManager;
@@ -8,12 +7,9 @@ import com.adam.swing_project.timer.component.FileManager;
 import com.adam.swing_project.timer.component.OptionManager;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -266,7 +262,7 @@ public class OptionDialog extends JDialog {
         statButtonGroup.add(statDisableRadio);
         statButtonGroup.add(statStartDayRadio);
         statButtonGroup.add(statEndDayRadio);
-        OptionConstants.StatDefaultMethod generalStatDefault = OptionManager.getInstance().getOptionValueOrDefault(
+        OptionConstants.StatDefaultMethod generalStatDefault = OptionManager.getInstance().getOptionValueOrPutDefault(
                 OptionConstants.OPTION_GENERAL_STAT_DEFAULT, OptionConstants.StatDefaultMethod.class,
                 OptionConstants.StatDefaultMethod.STAT_BY_START_DAY);
         Map<JRadioButton, OptionConstants.StatDefaultMethod> statDefaultRadioMap = new HashMap<>();
@@ -316,8 +312,8 @@ public class OptionDialog extends JDialog {
         advancedLogComp.setBorder(BorderFactory.createTitledBorder("日志选项"));
         JCheckBox advancedLogFileEnabled = new JCheckBox("输出日志文件(重启生效)"),
                 advancedLogDebugEnabled = new JCheckBox("启用调试级别");
-        boolean logFileEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, String.class, "true"));
-        boolean logDebugEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrDefault(OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, String.class, "false"));
+        boolean logFileEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrPutDefault(OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, String.class, "true"));
+        boolean logDebugEnabled = Boolean.parseBoolean(OptionManager.getInstance().getOptionValueOrPutDefault(OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, String.class, "false"));
         advancedLogFileEnabled.setSelected(logFileEnabled);
         advancedLogDebugEnabled.setSelected(logDebugEnabled);
         gridBagConstraints = new GridBagConstraints(0,0,1,1,0,0,

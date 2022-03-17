@@ -86,7 +86,7 @@ public class OptionManager implements CustomInstantiationSnapshotable {
         return null;
     }
 
-    public <T> T getOptionValueOrDefault(String identifier, Class<T> optionClass, T defaultValue) {
+    public <T> T getOptionValueOrPutDefault(String identifier, Class<T> optionClass, T defaultValue) {
         T optionValue = getOptionValue(identifier, optionClass);
         if(optionValue == null) {
             putOption(identifier, defaultValue);
