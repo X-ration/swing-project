@@ -1,34 +1,67 @@
 package com.adam.swing_project.timer;
 
+import com.adam.swing_project.library.logger.ConsoleLogger;
+import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
+import com.adam.swing_project.library.logger.RollingFileLogger;
 import com.adam.swing_project.library.util.ApplicationArgumentResolver;
 import com.adam.swing_project.timer.app_info.TimerAppInfo;
 import com.adam.swing_project.timer.component.ApplicationManager;
+import com.adam.swing_project.timer.component.FileManager;
+import com.adam.swing_project.timer.component.RootConfigStorage;
 import com.adam.swing_project.timer.component.TrayIconManager;
 import com.adam.swing_project.timer.frontend.StatisticDialog;
 import com.adam.swing_project.timer.frontend.TimerPanel;
-import com.adam.swing_project.timer.stat.TimerStatistic;
+import com.adam.swing_project.timer.option.OptionConstants;
+import com.adam.swing_project.timer.option.OptionDialog;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 public class TimerProgram extends JFrame{
     private final TrayIconManager trayIconManager;
+    private static Logger LOGGER;
 
     public static void main(String[] args) {
         ApplicationArgumentResolver argumentResolver = new ApplicationArgumentResolver(args);
-        ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
-        TimerAppInfo appInfo;
-        try {
-            appInfo = new TimerAppInfo(argumentResolver);
-            ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
+        RootConfigStorage.getInstance().init(argumentResolver);
+        FileManager.getInstance().init(argumentResolver);
+
+        boolean logFileEnabled = Boolean.parseBoolean(RootConfigStorage.getInstance().getRootConfigOrPutDefault(OptionConstants.OPTION_ROOT_LOG_FILE_ENABLED, "true"));
+        boolean logDebugEnabled = Boolean.parseBoolean(RootConfigStorage.getInstance().getRootConfigOrPutDefault(OptionConstants.OPTION_ROOT_LOG_DEBUG_ENABLED, "false"));
+        Logger.LogLevel defaultLogLevel = Logger.LogLevel.INFO;
+        if(logDebugEnabled) {
+            defaultLogLevel = Logger.LogLevel.DEBUG;
         }
-        new TimerProgram(appInfo);
+        LoggerFactory.setupGlobalLevel(defaultLogLevel);
+        List<Logger> loggerList = new LinkedList<>();
+        loggerList.add(ConsoleLogger.createLogger(TimerProgram.class));
+        if(logFileEnabled) {
+            File logFile = FileManager.getInstance().requireSubFile("swing-timer.log");
+            loggerList.add(RollingFileLogger.createLogger(TimerProgram.class, logFile, RollingFileLogger.RollingFileMode.BY_DAY));
+        }
+        LoggerFactory.setupLoggers(loggerList);
+        LOGGER = LoggerFactory.getLogger(TimerProgram.class);
+        try {
+            ApplicationManager.getInstance().registerProgramGlobalObject(argumentResolver);
+            TimerAppInfo appInfo;
+            try {
+                appInfo = new TimerAppInfo(argumentResolver);
+                ApplicationManager.getInstance().registerProgramGlobalObject(appInfo);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+            new TimerProgram(appInfo);
+        } catch (Exception e) {
+            LOGGER.logException(e, "TimerProgram Exception!");
+        }
     }
 
     public TimerProgram(TimerAppInfo appInfo) {
@@ -45,7 +78,7 @@ public class TimerProgram extends JFrame{
         //托盘
         trayIconManager = TrayIconManager.getInstance();
         trayIconManager.setjFrame(jFrame);
-        trayIconManager.addTrayIconIfSupported();
+        trayIconManager.addTrayIconIfSupported(titleString);
 
         //菜单栏
         JMenuBar jMenuBar = new JMenuBar();
@@ -54,14 +87,14 @@ public class TimerProgram extends JFrame{
                 , helpMenu = new JMenu("帮助(H)");
         JMenuItem fileNewTimerItem = new JMenuItem("新建计时器(N)"),
                 fileStatisticItem = new JMenuItem("统计数据(S)"),
+                optionItem = new JMenuItem("选项面板"),
                 helpAboutItem = new JMenuItem("关于(A)");
-        JCheckBoxMenuItem optionStatItem = new JCheckBoxMenuItem("启用统计(待开发)");
         jMenuBar.add(fileMenu);
         jMenuBar.add(optionMenu);
         jMenuBar.add(helpMenu);
         fileMenu.add(fileNewTimerItem);
         fileMenu.add(fileStatisticItem);
-        optionMenu.add(optionStatItem);
+        optionMenu.add(optionItem);
         helpMenu.add(helpAboutItem);
         fileMenu.setMnemonic('F');
         optionMenu.setMnemonic('O');
@@ -69,13 +102,12 @@ public class TimerProgram extends JFrame{
         fileNewTimerItem.setMnemonic('N');
         fileStatisticItem.setMnemonic('S');
         helpAboutItem.setMnemonic('A');
-        optionStatItem.setState(TimerStatistic.getInstance().isStatEnabled());
         fileNewTimerItem.addActionListener(e -> {
             timerPanel.addSingleTimerPanel();
             jFrame.revalidate();
         });
         fileStatisticItem.addActionListener(e -> showStatisticDialog(jFrame));
-        optionStatItem.addActionListener(e -> TimerStatistic.getInstance().setStatEnabled(optionStatItem.getState()));
+        optionItem.addActionListener(e -> (new OptionDialog(jFrame)).setVisible(true));
         helpAboutItem.addActionListener(e -> {
             String aboutMessage = titleString + System.lineSeparator() +
                     System.lineSeparator() +

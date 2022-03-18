@@ -1,248 +1,127 @@
 package com.adam.swing_project.timer.stat;
 
-import com.adam.swing_project.library.logger.Logger;
 import com.adam.swing_project.library.assertion.Assert;
+import com.adam.swing_project.library.datetime.Date;
+import com.adam.swing_project.library.datetime.Time;
+import com.adam.swing_project.library.snapshot.CustomInstantiationSnapshotable;
+import com.adam.swing_project.library.snapshot.SnapshotManager;
 import com.adam.swing_project.library.snapshot.SnapshotReader;
 import com.adam.swing_project.library.snapshot.SnapshotWriter;
-import com.adam.swing_project.library.snapshot.Snapshotable;
+import com.adam.swing_project.timer.component.OptionManager;
+import com.adam.swing_project.timer.option.OptionConstants;
+import com.adam.swing_project.timer.timer.CountingRound;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-/**
- * 计划移除该类的统计功能，不过该类可以作为序列化自定义类型功能的示例
- */
-@Deprecated
-public class TimerStatistic implements Snapshotable {
+public class TimerStatistic implements CustomInstantiationSnapshotable {
 
-    private static TimerStatistic instance = null;
-    private boolean statEnabled = true;
-    private final Logger logger = Logger.createLogger(this);
+    private static final TimerStatistic instance = new TimerStatistic();
+    private final Map<Date, TimerDayStatistic> dayStatisticMap = new HashMap<>();
 
-    private final Map<String, DayStatistic> statisticMap = new HashMap<>();
+    static {
+        SnapshotManager.getInstance().registerSnapshotable(instance);
+    }
 
-    public class DayStatistic implements Snapshotable{
-        private int totalHour;
-        private int totalMinute;
-        private int totalSecond;
+    /**
+     * 获取所有有数据的日期
+     * @return
+     */
+    public Date[] availableDates() {
+        List<Date> result = new LinkedList<>(dayStatisticMap.keySet());
+        return result.toArray(new Date[0]);
+    }
 
-        private int naturalHour;
-        private int naturalMinute;
-        private int naturalSecond;
+    /**
+     * 获取特定日期的统计数据
+     * @param date
+     * @return
+     */
+    public TimerDayStatistic getDayStatistic(Date date) {
+        return dayStatisticMap.get(date);
+    }
 
-        private int userStoppedHour;
-        private int userStoppedMinute;
-        private int userStoppedSecond;
+    /**
+     * 手动修正统计时长
+     * @param date
+     * @param totalResetTime
+     * @param totalCountedTime
+     */
+    public void reviseDayStatistic(Date date, Time totalResetTime, Time totalCountedTime) {
+        TimerDayStatistic dayStatistic = getDayStatisticOrNew(date);
+        dayStatistic.revise(totalResetTime, totalCountedTime);
+    }
 
-        private void recordNatural(int hour, int minute) {
-            naturalHour += hour;
-            naturalMinute += minute;
-            totalHour += hour;
-            totalMinute += minute;
-            recompute();
+    private TimerDayStatistic getDayStatisticOrNew(Date date) {
+        TimerDayStatistic dayStatistic = dayStatisticMap.get(date);
+        if(dayStatistic == null) {
+            dayStatistic = new TimerDayStatistic(date,
+                    new Time(0,0,0), new Time(0,0,0));
+            dayStatisticMap.put(date, dayStatistic);
         }
-        private void recordUserStopped(int hour, int minute, int second) {
-            userStoppedHour += hour;
-            userStoppedMinute += minute;
-            userStoppedSecond += second;
-            totalHour += hour;
-            totalMinute += minute;
-            totalSecond += second;
-            recompute();
-        }
-        private void recompute() {
-            if(totalSecond >= 60) {
-                totalMinute += totalSecond / 60;
-                totalSecond = totalSecond % 60;
-            }
-            if(totalMinute >= 60) {
-                totalHour += totalMinute / 60;
-                totalMinute = totalMinute % 60;
-            }
+        return dayStatistic;
+    }
 
-            if(naturalSecond >= 60) {
-                naturalSecond += naturalSecond / 60;
-                naturalSecond = naturalSecond % 60;
-            }
-            if(naturalMinute >= 60) {
-                naturalHour += naturalMinute / 60;
-                naturalMinute = naturalMinute % 60;
-            }
-
-            if(userStoppedSecond >= 60) {
-                userStoppedMinute += userStoppedSecond / 60;
-                userStoppedSecond = userStoppedSecond % 60;
-            }
-            if(userStoppedMinute >= 60) {
-                userStoppedHour += userStoppedMinute / 60;
-                userStoppedMinute = userStoppedMinute % 60;
-            }
-        }
-
-        public String getTotalStatistic() {
-            return totalHour + ":" + totalMinute + ":" + totalSecond;
-        }
-
-        public String getNaturalStatistic() {
-            return naturalHour + ":" + naturalMinute + ":" + naturalSecond;
-        }
-
-        public String getUserStoppedStatistic() {
-            return userStoppedHour + ":" + userStoppedMinute + ":" + userStoppedSecond;
-        }
-
-        @Override
-        public byte[] writeToSnapshot() {
-            return SnapshotWriter.writer()
-                    .writeInt(totalHour).writeInt(totalMinute).writeInt(totalSecond)
-                    .writeInt(naturalHour).writeInt(naturalMinute).writeInt(naturalSecond)
-                    .writeInt(userStoppedHour).writeInt(userStoppedMinute).writeInt(userStoppedSecond)
-                    .toByteArray();
-        }
-
-        @Override
-        public void restoreFromSnapshot(byte[] bytes) {
-            SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
-            totalHour = snapshotReader.readInt();
-            totalMinute = snapshotReader.readInt();
-            totalSecond = snapshotReader.readInt();
-            naturalHour = snapshotReader.readInt();
-            naturalMinute = snapshotReader.readInt();
-            naturalSecond = snapshotReader.readInt();
-            userStoppedHour = snapshotReader.readInt();
-            userStoppedMinute = snapshotReader.readInt();
-            userStoppedSecond = snapshotReader.readInt();
+    public void reportCountingRoundStart(CountingRound countingRound) {
+        OptionConstants.StatDefaultMethod statDefaultMethod = OptionManager.getInstance().getOptionValue(OptionConstants.OPTION_GENERAL_STAT_DEFAULT, OptionConstants.StatDefaultMethod.class);
+        if(statDefaultMethod != OptionConstants.StatDefaultMethod.DISABLED) {
+            Date date = countingRound.getStartDate();
+            TimerDayStatistic dayStatistic = getDayStatisticOrNew(date);
+            dayStatistic.statResetTime(countingRound.getResetTime());
         }
     }
 
-    private TimerStatistic() {
-        instance = this;
+    public void reportCountingRoundEnd(CountingRound countingRound) {
+        Assert.isTrue(countingRound.isFinished(), "CountingRound not finished!");
+        OptionConstants.StatDefaultMethod statDefaultMethod = OptionManager.getInstance().getOptionValue(OptionConstants.OPTION_GENERAL_STAT_DEFAULT, OptionConstants.StatDefaultMethod.class);
+        if(statDefaultMethod != OptionConstants.StatDefaultMethod.DISABLED) {
+            Date statDate;
+            if(statDefaultMethod == OptionConstants.StatDefaultMethod.STAT_BY_START_DAY) {
+                statDate = countingRound.getStartDate();
+            } else {
+                statDate = countingRound.getEndDate();
+            }
+            TimerDayStatistic dayStatistic = getDayStatisticOrNew(statDate);
+            dayStatistic.statCountedTime(countingRound.getCountedTime());
+        }
     }
 
     public static TimerStatistic getInstance() {
-        if(instance == null) {
-            instance = new TimerStatistic();
-        }
         return instance;
     }
 
-    /**
-     * 统计自然停止计时，外部调用
-     * @param hour
-     * @param minute
-     */
-    public void recordNaturalCounting(int year, int month, int day, int hour, int minute) {
-        if(statEnabled) {
-            DayStatistic dayStatistic = getOrPut(year, month, day);
-            dayStatistic.recordNatural(hour, minute);
-        }
+    @Override
+    public String instantiationMethodName() {
+        return "getInstance";
     }
-
-    /**
-     * 统计用户停止计时，外部调用
-     * @param hour
-     * @param minute
-     * @param second
-     */
-    public void recordUserStoppedCounting(int year, int month, int day, int hour, int minute, int second) {
-        if(statEnabled) {
-            DayStatistic dayStatistic = getOrPut(year, month, day);
-            dayStatistic.recordUserStopped(hour, minute, second);
-        }
-    }
-
-    public boolean isStatEnabled() {
-        return statEnabled;
-    }
-
-    public void setStatEnabled(boolean statEnabled) {
-        logger.logInfo("统计功能已[" + (statEnabled ? "启用" : "禁用") + "]");
-        this.statEnabled = statEnabled;
-    }
-
-    /**
-     * 获取最近<requireDays>天的统计数据，外部调用
-     * @param requireDays 包括今天在内 需要的天数
-     * @return 返回值为Object[]，其格式按照(String)日期、(DayStatistic)统计数据重复，数组长度为2*requireDays；按照日期降序排列
-     */
-    public Object[] getDayStatistic(int requireDays) {
-        Assert.isTrue(requireDays > 0, "requireDays > 0!");
-        Object[] result = new Object[2*requireDays];
-        for(int i=0;i<requireDays;i++) {
-            String date = getDateString(i);
-            DayStatistic dayStatistic = statisticMap.get(date);
-            result[2*i] = date;
-            result[2*i+1] = dayStatistic;
-        }
-        return result;
-    }
-
 
     @Override
     public byte[] writeToSnapshot() {
-//        Set<Map.Entry<String, DayStatistic>> entrySet = statisticMap.entrySet();
-//        SnapshotWriter snapshotWriter = SnapshotWriter.writer(new Class[]{DayStatistic.class});
-//        snapshotWriter.writeClassTable();
-//        snapshotWriter.writeInt(entrySet.size());
-//        for(Map.Entry<String, DayStatistic> entry: entrySet) {
-//            snapshotWriter.writeString(entry.getKey());
-//            snapshotWriter.writeSnapshotableObject(entry.getValue());
-//        }
-//        return snapshotWriter.toByteArray();
-        return new byte[0];
+        SnapshotWriter writer = SnapshotWriter.writer();
+        writer.writeInt(dayStatisticMap.size());
+        for(Map.Entry<Date, TimerDayStatistic> entry: dayStatisticMap.entrySet()) {
+            Date date = entry.getKey();
+            TimerDayStatistic dayStatistic = entry.getValue();
+            Time totalResetTime = dayStatistic.getTotalResetTime(),
+                    totalCountedTime = dayStatistic.getTotalCountedTime();
+            writer.writeInt(date.getYear()).writeInt(date.getMonth()).writeInt(date.getDay())
+                    .writeInt(totalResetTime.getHour()).writeInt(totalResetTime.getMinute()).writeInt(totalResetTime.getSecond())
+                    .writeInt(totalCountedTime.getHour()).writeInt(totalCountedTime.getMinute()).writeInt(totalCountedTime.getSecond());
+        }
+        return writer.toByteArray();
     }
 
     @Override
     public void restoreFromSnapshot(byte[] bytes) {
-//        SnapshotReader snapshotReader = SnapshotReader.reader(bytes);
-//        snapshotReader.readClassTable();
-//        int size = snapshotReader.readInt();
-//        Assert.isTrue(size>=0);
-//        for(int i=0;i<size;i++) {
-//            String mapKey = snapshotReader.readString();
-//            DayStatistic dayStatistic = new DayStatistic();
-//            snapshotReader.readSnapshotableObject(dayStatistic);
-//            statisticMap.put(mapKey, dayStatistic);
-//        }
-    }
-
-    private DayStatistic getOrPut(int year, int month, int day) {
-        String dateString = year + "-" + (month < 10 ? "0" : "") + month + "-" + (day < 10 ? "0" : "") + day;
-        DayStatistic dayStatistic = statisticMap.get(dateString);
-        if(dayStatistic == null) {
-            dayStatistic = new DayStatistic();
-            statisticMap.put(dateString, dayStatistic);
+        SnapshotReader reader = SnapshotReader.reader(bytes);
+        int size = reader.readInt();
+        while(size-->0) {
+            Date date = new Date(reader.readInt(), reader.readInt(), reader.readInt());
+            Time totalResetTime = new Time(reader.readInt(), reader.readInt(), reader.readInt());
+            Time totalCountedTime = new Time(reader.readInt(), reader.readInt(), reader.readInt());
+            TimerDayStatistic dayStatistic = getDayStatisticOrNew(date);
+            dayStatistic.statResetTime(totalResetTime);
+            dayStatistic.statCountedTime(totalCountedTime);
+            dayStatisticMap.put(date, dayStatistic);
         }
-        return dayStatistic;
     }
-
-    private DayStatistic getOrPut(int daysDiff) {
-        String date = getDateString(daysDiff);
-        DayStatistic dayStatistic = statisticMap.get(date);
-        if(dayStatistic == null) {
-            dayStatistic = new DayStatistic();
-            statisticMap.put(date, dayStatistic);
-        }
-        return dayStatistic;
-    }
-
-    private String getDateString(int daysDiff) {
-        Date date = new Date();
-        if(daysDiff != 0) {
-            date.setTime(date.getTime() - (long) daysDiff * 24 * 3600 * 1000);
-        }
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        return simpleDateFormat.format(date);
-    }
-
-    public static void main(String[] args) {
-        TimerStatistic timerStatistic = TimerStatistic.getInstance();
-        timerStatistic.recordNaturalCounting(2021, 11, 15, 1, 1);
-        timerStatistic.recordUserStoppedCounting(2021, 4, 3, 1,0, 1);
-        System.out.println(timerStatistic);
-    }
-
 }

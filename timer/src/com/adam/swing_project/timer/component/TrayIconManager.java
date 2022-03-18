@@ -1,6 +1,7 @@
 package com.adam.swing_project.timer.component;
 
 import com.adam.swing_project.library.logger.Logger;
+import com.adam.swing_project.library.logger.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +17,7 @@ public class TrayIconManager {
     private JFrame jFrame;
     private TrayIcon trayIcon;
     private final boolean isSupportSystemTray = SystemTray.isSupported();
-    private final Logger logger = Logger.createLogger(this);
+    private final Logger logger = LoggerFactory.getLogger(this);
 
     public static TrayIconManager getInstance() {
         return instance;
@@ -30,7 +31,7 @@ public class TrayIconManager {
         return isSupportSystemTray;
     }
 
-    public void addTrayIconIfSupported() {
+    public void addTrayIconIfSupported(String tooltip) {
         if(isSupportSystemTray) {
 //            Font f = new Font("宋体", Font.PLAIN, 12);
 //            UIManager.put("Label.font",f);
@@ -57,6 +58,7 @@ public class TrayIconManager {
 
             PopupMenu trayPopupMenu = new PopupMenu();
             trayIcon = new TrayIcon(IconManager.timer24().getImage());
+            trayIcon.setToolTip(tooltip);
             SystemTray systemTray = SystemTray.getSystemTray();
 
             MenuItem showMainItem = new MenuItem("显示主窗口")
@@ -76,6 +78,7 @@ public class TrayIconManager {
             });
 
             trayIcon.setPopupMenu(trayPopupMenu);
+            trayIcon.setImageAutoSize(true);
             try {
                 systemTray.add(trayIcon);
             } catch (AWTException e) {

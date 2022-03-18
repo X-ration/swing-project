@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Fat-Jar-Enabled: True
 Fat-Jar-Lib-Dir: lib
-App-Info-Version: 1.2.5
+App-Info-Version: 1.2.6
 App-Info-Name: Swing计时器

@@ -3,8 +3,8 @@ package com.adam.swing_project.timer.frontend;
 import com.adam.swing_project.library.datetime.Date;
 import com.adam.swing_project.library.datetime.Time;
 import com.adam.swing_project.library.util.DateTimeUtil;
-import com.adam.swing_project.timer.stat.ActionLogDayStatistic;
-import com.adam.swing_project.timer.stat.ActionLogStatistic;
+import com.adam.swing_project.timer.stat.TimerDayStatistic;
+import com.adam.swing_project.timer.stat.TimerStatistic;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -23,7 +23,7 @@ public class StatisticDialog extends JDialog {
         super(jFrame, "统计数据");
         setModal(true);
 
-        Date[] dates = ActionLogStatistic.getInstance().availableDates();
+        Date[] dates = TimerStatistic.getInstance().availableDates();
         String[][] tableData = new String[dates.length][4];
         String[] tableHeader = new String[]{"日期","计划计时","实际计时","手动修正"};
         Vector<String> dateVector = new Vector<>();
@@ -33,7 +33,7 @@ public class StatisticDialog extends JDialog {
             String dateString = DateTimeUtil.wrapDateYearToDay(date);
             tableData[i][0] = dateString;
             dateVector.add(dateString);
-            ActionLogDayStatistic dayStatistic = ActionLogStatistic.getInstance().getDayStatistic(date);
+            TimerDayStatistic dayStatistic = TimerStatistic.getInstance().getDayStatistic(date);
             tableData[i][1] = DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalResetTime());
             tableData[i][2] = DateTimeUtil.wrapTimeHourToSecond(dayStatistic.getTotalCountedTime());
             tableData[i][3] = "修正";
@@ -178,19 +178,14 @@ public class StatisticDialog extends JDialog {
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             JButton jButton = new JButton((String) value);
             jButton.setFont(jButton.getFont().deriveFont(Font.PLAIN));
-            String dateString = (String) table.getModel().getValueAt(row, 0);
-            if(DateTimeUtil.getCurrentDate().equals(DateTimeUtil.unwrapDateYearToDay(dateString))) {
-                jButton.setEnabled(false);
-            } else {
-                ButtonActionListener actionListener = new ButtonActionListener(table, jButton, row);
-                jButton.addActionListener(actionListener);
-                table.getModel().addTableModelListener(e -> {
-                    if (e.getType() == TableModelEvent.UPDATE && e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE
-                            && e.getColumn() == TableModelEvent.ALL_COLUMNS) {
-                        actionListener.reset();
-                    }
-                });
-            }
+            ButtonActionListener actionListener = new ButtonActionListener(table, jButton, row);
+            jButton.addActionListener(actionListener);
+            table.getModel().addTableModelListener(e -> {
+                if (e.getType() == TableModelEvent.UPDATE && e.getFirstRow() == 0 && e.getLastRow() == Integer.MAX_VALUE
+                        && e.getColumn() == TableModelEvent.ALL_COLUMNS) {
+                    actionListener.reset();
+                }
+            });
             return jButton;
         }
 
@@ -210,10 +205,6 @@ public class StatisticDialog extends JDialog {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JButton jButton = new JButton((String) value);
             jButton.setFont(jButton.getFont().deriveFont(Font.PLAIN));
-            String dateString = (String) table.getModel().getValueAt(row, 0);
-            if(DateTimeUtil.getCurrentDate().equals(DateTimeUtil.unwrapDateYearToDay(dateString))) {
-                jButton.setEnabled(false);
-            }
             return jButton;
         }
     }
@@ -322,7 +313,7 @@ public class StatisticDialog extends JDialog {
             Date date = DateTimeUtil.unwrapDateYearToDay(dateString);
             Time totalResetTime = DateTimeUtil.unwrapTimeHourToSecond(totalResetTimeString),
                     totalCountedTime = DateTimeUtil.unwrapTimeHourToSecond(totalCountedTimeString);
-            ActionLogStatistic.getInstance().reviseDayStatistic(date, totalResetTime, totalCountedTime);
+            TimerStatistic.getInstance().reviseDayStatistic(date, totalResetTime, totalCountedTime);
         }
 
         void filterDate(String dateString) {

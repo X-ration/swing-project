@@ -6,3 +6,5 @@ out/
 release/
 compile/
 package/
+
+*.log
