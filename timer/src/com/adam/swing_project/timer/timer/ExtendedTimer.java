@@ -46,9 +46,12 @@ public class ExtendedTimer extends Timer implements CustomInstantiationSnapshota
 
     @Override
     public void start() {
+        TimerStatus oldStatus = this.status;
         super.start();
-        this.countingRound = new CountingRound(resetTime);
         addActionLog(ActionLog.ActionLogType.TIMER_START);
+        if(oldStatus != TimerStatus.PAUSED) {
+            this.countingRound = new CountingRound(resetTime);
+        }
     }
 
     @Override
